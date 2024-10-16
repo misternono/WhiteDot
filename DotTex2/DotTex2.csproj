@@ -7,8 +7,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\DotTex2\DotTex2.csproj" />
-  </ItemGroup>
-
 </Project>
