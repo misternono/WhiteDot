@@ -85,6 +85,7 @@ namespace DotTex2.Convert
 
         private void RenderParagraph(Paragraph p, StringBuilder content)
         {
+                        content.AppendLine("BT");
             content.AppendLine("/F1 12 Tf");
             content.AppendLine($"50 {currentY} Td");
 
@@ -101,21 +102,25 @@ namespace DotTex2.Convert
                         content.AppendLine("/F1 12 Tf");
                         break;
                     case ItalicText i:
+
                         content.AppendLine("/F1I 12 Tf");
                         content.AppendLine($"({EscapeText(i.Text)}) Tj");
                         content.AppendLine("/F1 12 Tf");
                         break;
                 }
             }
+                        content.AppendLine("ET");
 
             currentY -= 20;
         }
 
         private void RenderSection(Section s, StringBuilder content)
         {
+            content.AppendLine("BT");
             content.AppendLine("/F1B 16 Tf");
             content.AppendLine($"50 {currentY} Td");
             content.AppendLine($"({EscapeText(s.Title)}) Tj");
+            content.AppendLine("ET");
             currentY -= 30;
 
             foreach (var sectionElement in s.Content)
@@ -126,9 +131,11 @@ namespace DotTex2.Convert
 
         private void RenderMath(MathExpression math, StringBuilder content)
         {
+            content.AppendLine("BT");
             content.AppendLine("/F1I 12 Tf");
             content.AppendLine($"50 {currentY} Td");
             content.AppendLine($"({EscapeText(math.Expression)}) Tj");
+            content.AppendLine("ET");
             currentY -= 20;
         }
 
