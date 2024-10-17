@@ -17,7 +17,7 @@ namespace DotTex2.Parsing
     {
         private readonly List<Token> tokens;
         private int currentIndex = 0;
-
+        private int consecutiveNewLines = 0;
         public Parser(List<Token> tokens)
         {
             this.tokens = tokens;
@@ -45,6 +45,7 @@ namespace DotTex2.Parsing
 
             switch (token.Type)
             {
+                case TokenType.InlineCommand:
                 case TokenType.Command:
                     switch (token.Value)
                     {
@@ -72,10 +73,24 @@ namespace DotTex2.Parsing
                 case TokenType.BeginEnvironment:
                     return ParseEnvironment();
                 case TokenType.NewLine:
-                    // Ignore single newlines
-                    return null;
+                    return ParseNewLine();
             }
 
+            return null;
+        }
+
+        private IDocumentElement ParseNewLine()
+        {
+            consecutiveNewLines++;
+
+            if (consecutiveNewLines >= 2)
+            {
+                // Two or more consecutive newlines indicate a paragraph break
+                consecutiveNewLines = 0; // Reset the counter
+                return new ParagraphBreak();
+            }
+
+            // Single newlines are typically ignored in LaTeX, so we return null
             return null;
         }
 
@@ -277,11 +292,11 @@ namespace DotTex2.Parsing
 
             var token = tokens[currentIndex++];
 
-            // Ignore empty newlines that shouldn't create paragraphs
-            if (token.Type == TokenType.NewLine && expectedType == null)
-            {
-                return Consume(expectedType);
-            }
+            //// Ignore empty newlines that shouldn't create paragraphs
+            //if (token.Type == TokenType.NewLine && expectedType == null)
+            //{
+            //    return Consume(expectedType);
+            //}
 
             if (expectedType.HasValue && token.Type != expectedType)
                 throw new InvalidOperationException($"Expected {expectedType}, but got {token.Type}");

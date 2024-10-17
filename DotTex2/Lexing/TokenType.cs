@@ -9,6 +9,7 @@ namespace DotTex2.Lexing
     public enum TokenType
     {
         Text,
+        InlineCommand,
         Command,
         BeginEnvironment,
         EndEnvironment,
@@ -16,6 +17,12 @@ namespace DotTex2.Lexing
         MathEnd,
         NewLine,
         BracketOpen,
-        BracketClose
+        BracketClose,
+        Title,
+        Author,
+        Date,
+        UsePackage,
+        DocumentClass,
+        Metadata
     }
 }

@@ -46,7 +46,7 @@ Here's a famous equation: $E = mc^2$
         Console.WriteLine("\nDocument Structure:");
         PrintDocumentStructure(document);
         var conv= new LatexToPdf();
-        conv.GeneratePDF(document, "D:\\test.pdf");
+        conv.GeneratePDF(document, "C:\\Users\\admin\\Documents\\test.pdf");
         Console.WriteLine("\nConverting to HTML...");
         //var htmlConverter = new HTMLConverter();
         //string html = htmlConverter.Convert(document);
