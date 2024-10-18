@@ -12,6 +12,7 @@ namespace DotTex2.Convert
     {
         private StringBuilder pdf = new StringBuilder();
         private int objectCount = 0;
+        private bool isNewLine = true;
         private List<int> objectPositions = new List<int>();
         private int currentY = 800; // Start from top of the page
 
@@ -72,46 +73,67 @@ namespace DotTex2.Convert
                     RenderParagraph(p, content);
                     break;
                 case Section s:
+                    if (!isNewLine)
+                    {
+                        content.AppendLine("ET");
+                        currentY -= 20;
+                    }
+                    isNewLine = true;
                     RenderSection(s, content);
                     break;
                 case MathExpression m:
+                    if (!isNewLine)
+                    {
+                        content.AppendLine("ET");
+                        currentY -= 20;
+                    }
+                    isNewLine = true;
                     RenderMath(m, content);
                     break;
-                //case BulletList b:
-                //    RenderBulletList(b, content);
-                //    break;
+                case ParagraphBreak pr:
+                    if (!isNewLine)
+                    {
+                        content.AppendLine("ET");
+                        currentY -= 20;
+                    }
+                    isNewLine = true;
+                    RenderNewLine(content);
+                    break;
+                case BoldText bt:
+                    RenderParagraph(bt, content);
+                    break;
             }
         }
 
         private void RenderParagraph(Paragraph p, StringBuilder content)
         {
-                        content.AppendLine("BT");
-            content.AppendLine("/F1 12 Tf");
-            content.AppendLine($"50 {currentY} Td");
+            if (isNewLine)
+            {
+                content.AppendLine("BT");
+                content.AppendLine("/F1 12 Tf");
+                content.AppendLine($"50 {currentY} Td");
+                isNewLine = false;
+            }
 
             foreach (var inline in p.Content)
             {
                 switch (inline)
                 {
                     case TextElement t:
-                        content.AppendLine($"({EscapeText(t.Text)}) Tj");
+                        content.Append($"({EscapeText(t.Text)}) Tj ");
                         break;
                     case BoldText b:
-                        content.AppendLine("/F1B 12 Tf");
-                        content.AppendLine($"({EscapeText(b.Text)}) Tj");
-                        content.AppendLine("/F1 12 Tf");
+                        content.Append("/F1B 12 Tf ");
+                        content.Append($"({EscapeText(b.Text)}) Tj ");
+                        content.Append("/F1 12 Tf ");
                         break;
                     case ItalicText i:
-
-                        content.AppendLine("/F1I 12 Tf");
-                        content.AppendLine($"({EscapeText(i.Text)}) Tj");
-                        content.AppendLine("/F1 12 Tf");
+                        content.Append("/F1I 12 Tf ");
+                        content.Append($"({EscapeText(i.Text)}) Tj ");
+                        content.Append("/F1 12 Tf ");
                         break;
                 }
             }
-                        content.AppendLine("ET");
-
-            currentY -= 20;
         }
 
         private void RenderSection(Section s, StringBuilder content)
@@ -127,6 +149,16 @@ namespace DotTex2.Convert
             {
                 RenderElement(sectionElement, content);
             }
+        }
+
+        private void RenderNewLine(StringBuilder content)
+        {
+            //content.AppendLine("BT");
+            //content.AppendLine("/F1 12 Tf");
+            //content.AppendLine($"50 {currentY} Td");
+            //content.AppendLine("T*");
+            content.AppendLine("ET");
+            currentY -= 15;
         }
 
         private void RenderMath(MathExpression math, StringBuilder content)
