@@ -26,7 +26,15 @@ namespace DotTex2.Lexing
             foreach (Match match in TokenRegex.Matches(input))
             {
                 if (match.Groups[1].Success) // Command
-                    yield return new Token { Type = TokenType.Command, Value = match.Value };
+                {
+                    string command = match.Value;
+                    CommandType commandType = CommandClassifier.ClassifyCommand(command);
+                    yield return new Token
+                    {
+                        Type = commandType == CommandType.Inline ? TokenType.InlineCommand : TokenType.Command,
+                        Value = command
+                    };
+                }
                 else if (match.Groups[2].Success) // Begin environment
                     yield return new Token { Type = TokenType.BeginEnvironment, Value = match.Value };
                 else if (match.Groups[3].Success) // End environment
