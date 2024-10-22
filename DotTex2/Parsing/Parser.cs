@@ -175,7 +175,7 @@ namespace DotTex2.Parsing
                         var element = ParseElement();
                         if (element != null && element is Paragraph paragraph)
                         {
-                            ((Itemize)environment).Items.Add(paragraph); // Add items to the unordered list
+                            ((Itemize)environment).Content.Add(paragraph); // Add items to the unordered list
                         }
                     }
                     break;
@@ -187,7 +187,7 @@ namespace DotTex2.Parsing
                         var element = ParseElement();
                         if (element != null && element is Paragraph paragraph)
                         {
-                            ((Enumerate)environment).Items.Add(paragraph); // Add items to the ordered list
+                            ((Enumerate)environment).Content.Add(paragraph); // Add items to the ordered list
                         }
                     }
                     break;

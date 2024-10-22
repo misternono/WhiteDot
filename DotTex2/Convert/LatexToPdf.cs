@@ -1,4 +1,5 @@
 ﻿using DotTex2.Model;
+using DotTex2.Model.Environments;
 using DotTex2.Model.InlineElements;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,8 @@ namespace DotTex2.Convert
         private bool isNewLine = true;
         private List<int> objectPositions = new List<int>();
         private int currentY = 800; // Start from top of the page
+        private int sectionIndex = 0;
+        private int subsectionIndex = 0;
 
         public void GeneratePDF(Document doc, string outputPath)
         {
@@ -73,6 +76,8 @@ namespace DotTex2.Convert
                     RenderParagraph(p, content);
                     break;
                 case Section s:
+                    this.sectionIndex++;
+                    this.subsectionIndex = 0;
                     if (!isNewLine)
                     {
                         content.AppendLine("ET");
@@ -82,6 +87,7 @@ namespace DotTex2.Convert
                     RenderSection(s, content);
                     break;
                 case Subsection s:
+                    this.subsectionIndex++;
                     if (!isNewLine)
                     {
                         content.AppendLine("ET");
@@ -112,11 +118,40 @@ namespace DotTex2.Convert
                     RenderInline(il, content);
                     break;
                 case Model.Environment env:
-                    foreach (var cont in env.Content)
+                    switch (env)
                     {
-                        RenderElement(cont, content);
+                        case Itemize it:
+                            RenderItemize(it, content);
+                            break;
+                        default:
+                            foreach (var cont in env.Content)
+                            {
+                                RenderElement(cont, content);
+                            }
+                            break;
                     }
+                    
                     break;
+            }
+        }
+
+        private void RenderItemize(Itemize it, StringBuilder content)
+        {
+            if (isNewLine)
+            {
+                content.AppendLine("BT");
+                content.AppendLine("/F1 12 Tf");
+                content.AppendLine($"50 {currentY} Td");
+                isNewLine = false;
+            }
+            foreach (var cont in it.Content)
+            {
+                content.AppendLine("BT");
+                content.AppendLine("/F1 12 Tf");
+                content.AppendLine($"50 {currentY} Td");
+                content.Append($"({" · "}) Tj ");
+                currentY -= 30;
+                RenderElement(cont, content);
             }
         }
 
@@ -186,7 +221,7 @@ namespace DotTex2.Convert
             content.AppendLine("BT");
             content.AppendLine("/F1B 16 Tf");
             content.AppendLine($"50 {currentY} Td");
-            content.AppendLine($"({EscapeText(s.Title)}) Tj");
+            content.AppendLine($"({this.sectionIndex}. {EscapeText(s.Title)}) Tj");
             content.AppendLine("ET");
             currentY -= 30;
 
@@ -201,7 +236,7 @@ namespace DotTex2.Convert
             content.AppendLine("BT");
             content.AppendLine("/F1B 16 Tf");
             content.AppendLine($"50 {currentY} Td");
-            content.AppendLine($"({EscapeText(s.Title)}) Tj");
+            content.AppendLine($"({this.sectionIndex}.{this.subsectionIndex} {EscapeText(s.Title)}) Tj");
             content.AppendLine("ET");
             currentY -= 30;
 
