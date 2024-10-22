@@ -18,6 +18,7 @@ namespace DotTex2.Parsing
         private readonly List<Token> tokens;
         private int currentIndex = 0;
         private int consecutiveNewLines = 0;
+        private bool endedEnvironment = false;
         public Parser(List<Token> tokens)
         {
             this.tokens = tokens;
@@ -41,6 +42,12 @@ namespace DotTex2.Parsing
 
         private IDocumentElement ParseElement()
         {
+            if(endedEnvironment)
+            {
+                //Force exit of consumtion.
+                endedEnvironment = false;
+                return null;
+            }
             var token = Consume();
 
             switch (token.Type)
@@ -221,8 +228,12 @@ namespace DotTex2.Parsing
                     }
                     break;
             }
-
-            Consume(TokenType.EndEnvironment); // Consume \end{environmentName}
+            try
+            {
+                Consume(TokenType.EndEnvironment); // Consume \end{environmentName}
+            }
+            catch { }
+                endedEnvironment = true;
             return environment;
         }
 
@@ -287,8 +298,9 @@ namespace DotTex2.Parsing
 
         private Token Consume(TokenType? expectedType = null)
         {
-            if (currentIndex >= tokens.Count)
+            if (currentIndex > tokens.Count)
                 throw new InvalidOperationException("Unexpected end of input");
+
 
             var token = tokens[currentIndex++];
 

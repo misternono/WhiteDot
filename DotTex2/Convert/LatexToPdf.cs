@@ -81,6 +81,15 @@ namespace DotTex2.Convert
                     isNewLine = true;
                     RenderSection(s, content);
                     break;
+                case Subsection s:
+                    if (!isNewLine)
+                    {
+                        content.AppendLine("ET");
+                        currentY -= 20;
+                    }
+                    isNewLine = true;
+                    RenderSubection(s, content);
+                    break;
                 case MathExpression m:
                     if (!isNewLine)
                     {
@@ -99,8 +108,14 @@ namespace DotTex2.Convert
                     isNewLine = true;
                     RenderNewLine(content);
                     break;
-                case BoldText bt:
-                    RenderParagraph(bt, content);
+                case InlineElement il:
+                    RenderInline(il, content);
+                    break;
+                case Model.Environment env:
+                    foreach (var cont in env.Content)
+                    {
+                        RenderElement(cont, content);
+                    }
                     break;
             }
         }
@@ -136,7 +151,52 @@ namespace DotTex2.Convert
             }
         }
 
+        private void RenderInline(InlineElement p, StringBuilder content)
+        {
+            if (isNewLine)
+            {
+                content.AppendLine("BT");
+                content.AppendLine("/F1 12 Tf");
+                content.AppendLine($"50 {currentY} Td");
+                isNewLine = false;
+            }
+
+
+            switch (p)
+            {
+                case TextElement t:
+                    content.Append($"({EscapeText(t.Text)}) Tj ");
+                    break;
+                case BoldText b:
+                    content.Append("/F1B 12 Tf ");
+                    content.Append($"({EscapeText(b.Text)}) Tj ");
+                    content.Append("/F1 12 Tf ");
+                    break;
+                case ItalicText i:
+                    content.Append("/F1I 12 Tf ");
+                    content.Append($"({EscapeText(i.Text)}) Tj ");
+                    content.Append("/F1 12 Tf ");
+                    break;
+            }
+
+        }
+
         private void RenderSection(Section s, StringBuilder content)
+        {
+            content.AppendLine("BT");
+            content.AppendLine("/F1B 16 Tf");
+            content.AppendLine($"50 {currentY} Td");
+            content.AppendLine($"({EscapeText(s.Title)}) Tj");
+            content.AppendLine("ET");
+            currentY -= 30;
+
+            foreach (var sectionElement in s.Content)
+            {
+                RenderElement(sectionElement, content);
+            }
+        }
+
+        private void RenderSubection(Subsection s, StringBuilder content)
         {
             content.AppendLine("BT");
             content.AppendLine("/F1B 16 Tf");
