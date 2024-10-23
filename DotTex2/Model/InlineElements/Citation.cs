@@ -9,5 +9,6 @@ namespace DotTex2.Model.InlineElements
     public class Citation : InlineElement
     {
         public string Key { get; set; }
+        public FontSettings FontSettings { get; set; }
     }
 }

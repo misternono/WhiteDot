@@ -19,6 +19,8 @@ namespace DotTex2.Parsing
         private int currentIndex = 0;
         private int consecutiveNewLines = 0;
         private bool endedEnvironment = false;
+        private FontSettings currentFontSettings = new FontSettings();
+
         public Parser(List<Token> tokens)
         {
             this.tokens = tokens;
@@ -40,6 +42,148 @@ namespace DotTex2.Parsing
             return document;
         }
 
+        private IDocumentElement ParseFontCommand(Token token)
+        {
+            switch (token.CommandCategory)
+            {
+                case CommandType.Inline:
+                    return ParseInlineFontCommand(token);
+                case CommandType.FontStyle:
+                    ApplyFontStyle(token.Value);
+                    return null;
+                default:
+                    return null;
+            }
+        }
+
+        private IDocumentElement ParseInlineFontCommand(Token token)
+        {
+            Consume(TokenType.BracketOpen);
+            var content = ParseInlineContent();
+            Consume(TokenType.BracketClose);
+
+            switch (token.Value)
+            {
+                case "\\textbf":
+                    return new BoldText
+                    {
+                        Text = string.Join("", content.OfType<TextElement>().Select(t => t.Text)),
+                        FontSettings = new FontSettings { IsBold = true }
+                    };
+                case "\\textit":
+                    return new ItalicText
+                    {
+                        Text = string.Join("", content.OfType<TextElement>().Select(t => t.Text)),
+                        FontSettings = new FontSettings { IsItalic = true }
+                    };
+                case "\\texttt":
+                    return new TypewriterText
+                    {
+                        Text = string.Join("", content.OfType<TextElement>().Select(t => t.Text)),
+                        FontSettings = new FontSettings { IsTypewriter = true }
+                    };
+                case "\\textsc":
+                    return new SmallCapsText
+                    {
+                        Text = string.Join("", content.OfType<TextElement>().Select(t => t.Text)),
+                        FontSettings = new FontSettings { IsSmallCaps = true }
+                    };
+                default:
+                    return new TextElement
+                    {
+                        Text = string.Join("", content.OfType<TextElement>().Select(t => t.Text)),
+                        FontSettings = currentFontSettings
+                    };
+            }
+        }
+
+        private void ApplyFontStyle(string command)
+        {
+            switch (command)
+            {
+                case "\\rm":
+                case "\\rmfamily":
+                    currentFontSettings.FontFamily = "serif";
+                    break;
+                case "\\sf":
+                case "\\sffamily":
+                    currentFontSettings.FontFamily = "sans-serif";
+                    break;
+                case "\\tt":
+                case "\\ttfamily":
+                    currentFontSettings.FontFamily = "monospace";
+                    break;
+                case "\\bf":
+                case "\\bfseries":
+                    currentFontSettings.IsBold = true;
+                    break;
+                case "\\it":
+                case "\\itshape":
+                    currentFontSettings.IsItalic = true;
+                    break;
+                case "\\normalfont":
+                    ResetFontSettings();
+                    break;
+                // Font sizes
+                case "\\tiny": currentFontSettings.FontSize = "tiny"; break;
+                case "\\scriptsize": currentFontSettings.FontSize = "scriptsize"; break;
+                case "\\footnotesize": currentFontSettings.FontSize = "footnotesize"; break;
+                case "\\small": currentFontSettings.FontSize = "small"; break;
+                case "\\normalsize": currentFontSettings.FontSize = "normalsize"; break;
+                case "\\large": currentFontSettings.FontSize = "large"; break;
+                case "\\Large": currentFontSettings.FontSize = "Large"; break;
+                case "\\LARGE": currentFontSettings.FontSize = "LARGE"; break;
+                case "\\huge": currentFontSettings.FontSize = "huge"; break;
+                case "\\Huge": currentFontSettings.FontSize = "Huge"; break;
+            }
+        }
+
+        private void HandleFontSetting(Token token)
+        {
+            switch (token.Value)
+            {
+                case string s when s.StartsWith("\\setmainfont"):
+                    ParseFontFamilySetting();
+                    break;
+                case string s when s.StartsWith("\\fontsize"):
+                    ParseFontSizeSetting();
+                    break;
+                case string s when s.StartsWith("\\linespread"):
+                    ParseLineSpreadSetting();
+                    break;
+            }
+        }
+
+        private void ParseFontFamilySetting()
+        {
+            Consume(TokenType.BracketOpen);
+            currentFontSettings.FontFamily = Consume(TokenType.Text).Value;
+            Consume(TokenType.BracketClose);
+        }
+
+        private void ParseFontSizeSetting()
+        {
+            Consume(TokenType.BracketOpen);
+            var size = Consume(TokenType.Text).Value;
+            Consume(TokenType.BracketClose);
+            currentFontSettings.FontSize = size;
+        }
+
+        private void ParseLineSpreadSetting()
+        {
+            Consume(TokenType.BracketOpen);
+            if (double.TryParse(Consume(TokenType.Text).Value, out double spacing))
+            {
+                currentFontSettings.LineSpacing = spacing;
+            }
+            Consume(TokenType.BracketClose);
+        }
+
+        private void ResetFontSettings()
+        {
+            currentFontSettings = new FontSettings();
+        }
+
         private IDocumentElement ParseElement()
         {
             if(endedEnvironment)
@@ -52,6 +196,11 @@ namespace DotTex2.Parsing
 
             switch (token.Type)
             {
+                case TokenType.FontCommand:
+                    return ParseFontCommand(token);
+                case TokenType.FontSetting:
+                    HandleFontSetting(token);
+                    return null;
                 case TokenType.InlineCommand:
                 case TokenType.Command:
                     switch (token.Value)
@@ -74,7 +223,7 @@ namespace DotTex2.Parsing
                     }
                     break;
                 case TokenType.Text:
-                    return new Paragraph { Content = new List<InlineElement> { new TextElement { Text = token.Value } } };
+                    return new Paragraph { Content = new List<InlineElement> { new TextElement { Text = token.Value, FontSettings = currentFontSettings } } };
                 case TokenType.MathStart:
                     return ParseMathExpression();
                 case TokenType.BeginEnvironment:
@@ -277,7 +426,7 @@ namespace DotTex2.Parsing
                 switch (token.Type)
                 {
                     case TokenType.Text:
-                        content.Add(new TextElement { Text = token.Value });
+                        content.Add(new TextElement { Text = token.Value, FontSettings = currentFontSettings });
                         break;
                     case TokenType.Command:
                         if (token.Value == "\\textbf")
@@ -292,7 +441,7 @@ namespace DotTex2.Parsing
                         break;
                 }
             }
-
+            //Consume(TokenType.BracketClose);
             return content;
         }
 

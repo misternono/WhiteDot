@@ -10,5 +10,6 @@ namespace DotTex2.Lexing
     {
         public TokenType Type { get; set; }
         public string Value { get; set; }
+        public CommandType? CommandCategory { get; set; }
     }
 }

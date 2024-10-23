@@ -9,5 +9,6 @@ namespace DotTex2.Model.InlineElements
     public class ItalicText : InlineElement
     {
         public string Text { get; set; }
+        public FontSettings FontSettings { get; set; }
     }
 }

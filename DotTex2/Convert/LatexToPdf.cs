@@ -11,6 +11,20 @@ namespace DotTex2.Convert
 {
     public class LatexToPdf
     {
+        private readonly Dictionary<string, int> fontSizeMap = new Dictionary<string, int>
+        {
+            {"tiny", 6},
+            {"scriptsize", 8},
+            {"footnotesize", 9},
+            {"small", 10},
+            {"normalsize", 12},
+            {"large", 14},
+            {"Large", 16},
+            {"LARGE", 18},
+            {"huge", 20},
+            {"Huge", 24}
+        };
+
         private StringBuilder pdf = new StringBuilder();
         private int objectCount = 0;
         private bool isNewLine = true;
@@ -18,150 +32,249 @@ namespace DotTex2.Convert
         private int currentY = 800; // Start from top of the page
         private int sectionIndex = 0;
         private int subsectionIndex = 0;
+        private const int PAGE_HEIGHT = 842;
+        private const int PAGE_MARGIN_BOTTOM = 50;
+        private const int NEW_PAGE_START_Y = 800;
+
+        private List<string> contentStreams = new List<string>();
+        private StringBuilder currentPageContent = new StringBuilder();
 
         public void GeneratePDF(Document doc, string outputPath)
         {
             pdf.AppendLine("%PDF-1.4");
 
+            // Create initial objects
             int catalogPos = AddObject("<< /Type /Catalog /Pages 2 0 R >>");
-            int pagesPos = AddObject("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
-            int pagePos = AddObject("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F1B 6 0 R /F1I 7 0 R >> >> >>");
 
-            string contentStream = RenderContent(doc);
-            int contentStreamPos = AddStreamObject(contentStream);
+            // Render content and collect pages
+            RenderContent(doc);
 
+            // Create page tree
+            StringBuilder kidsString = new StringBuilder("[");
+            int pageCount = contentStreams.Count;
+            int firstPageRef = 3; // First page object reference
+
+            for (int i = 0; i < pageCount; i++)
+            {
+                if (i > 0) kidsString.Append(" ");
+                kidsString.Append($"{firstPageRef + (i * 2)} 0 R");
+            }
+            kidsString.Append("]");
+
+            int pagesPos = AddObject($"<< /Type /Pages /Kids {kidsString} /Count {pageCount} >>");
+
+            // Add each page and its content stream
+            for (int i = 0; i < contentStreams.Count; i++)
+            {
+                int pageContentRef = firstPageRef + (i * 2) + 1;
+                AddObject($"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 {PAGE_HEIGHT}] /Contents {pageContentRef} 0 R /Resources << /Font << /F1 5 0 R /F1B 6 0 R /F1I 7 0 R >> >> >>");
+                AddStreamObject(contentStreams[i]);
+            }
+
+            // Add font objects
             int fontPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
             int fontBoldPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
             int fontItalicPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique >>");
+            int fontBoldItalicPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-BoldOblique >>");
+            int fontMonoPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>");
+            int fontMonoBoldPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>");
+            int fontMonoItalicPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Oblique >>");
+            int fontMonoBoldItalicPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Courier-BoldOblique >>");
+
+            string fontResources = @"<< /Font 
+            << /F1 5 0 R 
+               /F1B 6 0 R 
+               /F1I 7 0 R 
+               /F1BI 8 0 R
+               /F2 9 0 R
+               /F2B 10 0 R
+               /F2I 11 0 R
+               /F2BI 12 0 R
+            >> >>";
+
+            for (int i = 0; i < contentStreams.Count; i++)
+            {
+                int pageContentRef = firstPageRef + (i * 2) + 1;
+                AddObject($"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 {PAGE_HEIGHT}] /Contents {pageContentRef} 0 R /Resources {fontResources} >>");
+                AddStreamObject(contentStreams[i]);
+            }
 
             GenerateXrefAndTrailer(outputPath);
         }
 
+        private string GetFontName(FontSettings settings)
+        {
+            
+            string baseFont = settings.IsTypewriter ? "F2" : "F1";
+            if (settings.IsBold && settings.IsItalic) return $"{baseFont}BI";
+            if (settings.IsBold) return $"{baseFont}B";
+            if (settings.IsItalic) return $"{baseFont}I";
+            return baseFont;
+        }
+
+        private int GetFontSize(FontSettings settings)
+        {
+            return fontSizeMap.TryGetValue(settings.FontSize, out int size) ? size : 12;
+        }
+
+        private void ApplyFontSettings(FontSettings settings)
+        {
+            if (settings == null) { ApplyDefaultFont(); return; }
+            string fontName = GetFontName(settings);
+            int fontSize = GetFontSize(settings);
+            currentPageContent.Append($"/{fontName} {fontSize} Tf ");
+        }
+
+        private void ApplyDefaultFont()
+        {
+            currentPageContent.Append("/F1 12 Tf ");
+        }
+
+        private void CheckPageBreak(int requiredSpace)
+        {
+            if (currentY - requiredSpace < PAGE_MARGIN_BOTTOM)
+            {
+                // End current page
+                if (!isNewLine)
+                {
+                    currentPageContent.AppendLine("ET");
+                }
+
+                // Save current page content
+                contentStreams.Add(currentPageContent.ToString());
+
+                // Start new page
+                currentPageContent = new StringBuilder();
+                currentPageContent.AppendLine("BT");
+                currentY = NEW_PAGE_START_Y;
+                isNewLine = false;
+            }
+        }
+
         private string RenderContent(Document doc)
         {
-            StringBuilder content = new StringBuilder();
-            content.AppendLine("BT");
-
-            //// Render title
-            //content.AppendLine("/F1B 24 Tf");
-            //content.AppendLine($"50 {currentY} Td");
-            //content.AppendLine($"({EscapeText(doc.Title)}) Tj");
-            //currentY -= 30;
-
-            //// Render author
-            //content.AppendLine("/F1 14 Tf");
-            //content.AppendLine($"0 {currentY} Td");
-            //content.AppendLine($"({EscapeText(doc.Author)}) Tj");
-            //currentY -= 20;
-
-            // Render date
-            //content.AppendLine($"0 {currentY} Td");
-            //content.AppendLine($"({EscapeText(doc.Date.ToString("MMMM d, yyyy"))}) Tj");
-            //currentY -= 40;
+            currentPageContent = new StringBuilder();
+            currentPageContent.AppendLine("BT");
+            isNewLine = false;
 
             foreach (var element in doc.Elements)
             {
-                RenderElement(element, content);
+                RenderElement(element);
             }
 
-            content.AppendLine("ET");
-            return content.ToString();
+            if (!isNewLine)
+            {
+                currentPageContent.AppendLine("ET");
+            }
+
+            // Add the last page
+            contentStreams.Add(currentPageContent.ToString());
+            return currentPageContent.ToString();
         }
 
-        private void RenderElement(IDocumentElement element, StringBuilder content)
+        private void RenderElement(IDocumentElement element)
         {
             switch (element)
             {
                 case Paragraph p:
-                    RenderParagraph(p, content);
+                    CheckPageBreak(30); // Estimated space needed for a paragraph line
+                    RenderParagraph(p);
                     break;
                 case Section s:
+                    CheckPageBreak(50); // Space for section heading
                     this.sectionIndex++;
                     this.subsectionIndex = 0;
                     if (!isNewLine)
                     {
-                        content.AppendLine("ET");
+                        currentPageContent.AppendLine("ET");
                         currentY -= 20;
                     }
                     isNewLine = true;
-                    RenderSection(s, content);
+                    RenderSection(s);
                     break;
                 case Subsection s:
+                    CheckPageBreak(40); // Space for subsection heading
                     this.subsectionIndex++;
                     if (!isNewLine)
                     {
-                        content.AppendLine("ET");
+                        currentPageContent.AppendLine("ET");
                         currentY -= 20;
                     }
                     isNewLine = true;
-                    RenderSubection(s, content);
+                    RenderSubection(s);
                     break;
                 case MathExpression m:
+                    CheckPageBreak(30); // Space for math expression
                     if (!isNewLine)
                     {
-                        content.AppendLine("ET");
+                        currentPageContent.AppendLine("ET");
                         currentY -= 20;
                     }
                     isNewLine = true;
-                    RenderMath(m, content);
+                    RenderMath(m);
                     break;
                 case ParagraphBreak pr:
                     if (!isNewLine)
                     {
-                        content.AppendLine("ET");
+                        currentPageContent.AppendLine("ET");
                         currentY -= 20;
                     }
                     isNewLine = true;
-                    RenderNewLine(content);
+                    RenderNewLine();
                     break;
                 case InlineElement il:
-                    RenderInline(il, content);
+                    CheckPageBreak(20); // Space for inline element
+                    RenderInline(il);
                     break;
                 case Model.Environment env:
                     switch (env)
                     {
                         case Itemize it:
-                            RenderItemize(it, content);
+                            CheckPageBreak(30 * it.Content.Count); // Space for itemize list
+                            RenderItemize(it);
                             break;
                         default:
                             foreach (var cont in env.Content)
                             {
-                                RenderElement(cont, content);
+                                RenderElement(cont);
                             }
                             break;
                     }
-                    
+                    break;
+                default:
+                    Console.WriteLine("unknown" + element.ToString());
                     break;
             }
         }
 
-        private void RenderItemize(Itemize it, StringBuilder content)
+        private void RenderItemize(Itemize it)
         {
             if (isNewLine)
             {
-                content.AppendLine("BT");
-                content.AppendLine("/F1 12 Tf");
-                content.AppendLine($"50 {currentY} Td");
+                currentPageContent.AppendLine("BT");
+                ApplyDefaultFont();
+                currentPageContent.AppendLine($"50 {currentY} Td");
                 isNewLine = false;
             }
+
             foreach (var cont in it.Content)
             {
-                content.AppendLine("BT");
-                content.AppendLine("/F1 12 Tf");
-                content.AppendLine($"50 {currentY} Td");
-                content.Append($"({" · "}) Tj ");
+                currentPageContent.AppendLine("BT");
+                ApplyDefaultFont();
+                currentPageContent.AppendLine($"50 {currentY} Td");
+                currentPageContent.Append($"({" · "}) Tj ");
                 currentY -= 30;
-                RenderElement(cont, content);
+                RenderElement(cont);
             }
         }
 
-        private void RenderParagraph(Paragraph p, StringBuilder content)
+        private void RenderParagraph(Paragraph p)
         {
             if (isNewLine)
             {
-                content.AppendLine("BT");
-                content.AppendLine("/F1 12 Tf");
-                content.AppendLine($"50 {currentY} Td");
+                currentPageContent.AppendLine("BT");
+                ApplyDefaultFont();
+                currentPageContent.AppendLine($"50 {currentY} Td");
                 isNewLine = false;
             }
 
@@ -170,99 +283,131 @@ namespace DotTex2.Convert
                 switch (inline)
                 {
                     case TextElement t:
-                        content.Append($"({EscapeText(t.Text)}) Tj ");
+                        ApplyFontSettings(t.FontSettings);
+                        string text = t.FontSettings.IsSmallCaps
+                            ? EscapeText(t.Text).ToUpper()
+                            : EscapeText(t.Text);
+                        currentPageContent.Append($"({text}) Tj ");
+                        ApplyDefaultFont();
                         break;
+
                     case BoldText b:
-                        content.Append("/F1B 12 Tf ");
-                        content.Append($"({EscapeText(b.Text)}) Tj ");
-                        content.Append("/F1 12 Tf ");
+                        ApplyFontSettings(b.FontSettings);
+                        currentPageContent.Append($"({EscapeText(b.Text)}) Tj ");
+                        ApplyDefaultFont();
                         break;
+
                     case ItalicText i:
-                        content.Append("/F1I 12 Tf ");
-                        content.Append($"({EscapeText(i.Text)}) Tj ");
-                        content.Append("/F1 12 Tf ");
+                        ApplyFontSettings(i.FontSettings);
+                        currentPageContent.Append($"({EscapeText(i.Text)}) Tj ");
+                        ApplyDefaultFont();
+                        break;
+
+                    case TypewriterText t:
+                        ApplyFontSettings(t.FontSettings);
+                        currentPageContent.Append($"({EscapeText(t.Text)}) Tj ");
+                        ApplyDefaultFont();
+                        break;
+
+                    case SmallCapsText s:
+                        ApplyFontSettings(s.FontSettings);
+                        currentPageContent.Append($"({EscapeText(s.Text.ToUpper())}) Tj ");
+                        ApplyDefaultFont();
                         break;
                 }
             }
         }
 
-        private void RenderInline(InlineElement p, StringBuilder content)
+        private void RenderInline(InlineElement p)
         {
             if (isNewLine)
             {
-                content.AppendLine("BT");
-                content.AppendLine("/F1 12 Tf");
-                content.AppendLine($"50 {currentY} Td");
+                currentPageContent.AppendLine("BT");
+                ApplyDefaultFont();
+                currentPageContent.AppendLine($"50 {currentY} Td");
                 isNewLine = false;
             }
-
 
             switch (p)
             {
                 case TextElement t:
-                    content.Append($"({EscapeText(t.Text)}) Tj ");
+                    ApplyFontSettings(t.FontSettings);
+                    string text = t.FontSettings.IsSmallCaps
+                        ? EscapeText(t.Text).ToUpper()
+                        : EscapeText(t.Text);
+                    currentPageContent.Append($"({text}) Tj ");
                     break;
+
                 case BoldText b:
-                    content.Append("/F1B 12 Tf ");
-                    content.Append($"({EscapeText(b.Text)}) Tj ");
-                    content.Append("/F1 12 Tf ");
+                    ApplyFontSettings(b.FontSettings);
+                    currentPageContent.Append($"({EscapeText(b.Text)}) Tj ");
                     break;
+
                 case ItalicText i:
-                    content.Append("/F1I 12 Tf ");
-                    content.Append($"({EscapeText(i.Text)}) Tj ");
-                    content.Append("/F1 12 Tf ");
+                    ApplyFontSettings(i.FontSettings);
+                    currentPageContent.Append($"({EscapeText(i.Text)}) Tj ");
+                    break;
+
+                case TypewriterText t:
+                    ApplyFontSettings(t.FontSettings);
+                    currentPageContent.Append($"({EscapeText(t.Text)}) Tj ");
+                    break;
+
+                case SmallCapsText s:
+                    ApplyFontSettings(s.FontSettings);
+                    currentPageContent.Append($"({EscapeText(s.Text.ToUpper())}) Tj ");
                     break;
             }
-
+            ApplyDefaultFont();
         }
 
-        private void RenderSection(Section s, StringBuilder content)
+        private void RenderSection(Section s)
         {
-            content.AppendLine("BT");
-            content.AppendLine("/F1B 16 Tf");
-            content.AppendLine($"50 {currentY} Td");
-            content.AppendLine($"({this.sectionIndex}. {EscapeText(s.Title)}) Tj");
-            content.AppendLine("ET");
+            currentPageContent.AppendLine("BT");
+            currentPageContent.AppendLine("/F1B 16 Tf"); // Sections use bold font by default
+            currentPageContent.AppendLine($"50 {currentY} Td");
+            currentPageContent.AppendLine($"({this.sectionIndex}. {EscapeText(s.Title)}) Tj");
+            currentPageContent.AppendLine("ET");
             currentY -= 30;
 
             foreach (var sectionElement in s.Content)
             {
-                RenderElement(sectionElement, content);
+                RenderElement(sectionElement);
             }
         }
 
-        private void RenderSubection(Subsection s, StringBuilder content)
+        private void RenderSubection(Subsection s)
         {
-            content.AppendLine("BT");
-            content.AppendLine("/F1B 16 Tf");
-            content.AppendLine($"50 {currentY} Td");
-            content.AppendLine($"({this.sectionIndex}.{this.subsectionIndex} {EscapeText(s.Title)}) Tj");
-            content.AppendLine("ET");
+            currentPageContent.AppendLine("BT");
+            currentPageContent.AppendLine("/F1B 14 Tf"); // Subsections use bold font by default
+            currentPageContent.AppendLine($"50 {currentY} Td");
+            currentPageContent.AppendLine($"({this.sectionIndex}.{this.subsectionIndex} {EscapeText(s.Title)}) Tj");
+            currentPageContent.AppendLine("ET");
             currentY -= 30;
 
             foreach (var sectionElement in s.Content)
             {
-                RenderElement(sectionElement, content);
+                RenderElement(sectionElement);
             }
         }
 
-        private void RenderNewLine(StringBuilder content)
+        private void RenderNewLine()
         {
             //content.AppendLine("BT");
             //content.AppendLine("/F1 12 Tf");
             //content.AppendLine($"50 {currentY} Td");
             //content.AppendLine("T*");
-            content.AppendLine("ET");
+            currentPageContent.AppendLine("ET");
             currentY -= 15;
         }
 
-        private void RenderMath(MathExpression math, StringBuilder content)
+        private void RenderMath(MathExpression math)
         {
-            content.AppendLine("BT");
-            content.AppendLine("/F1I 12 Tf");
-            content.AppendLine($"50 {currentY} Td");
-            content.AppendLine($"({EscapeText(math.Expression)}) Tj");
-            content.AppendLine("ET");
+            currentPageContent.AppendLine("BT");
+            currentPageContent.AppendLine("/F1I 12 Tf"); // Math uses italic by default
+            currentPageContent.AppendLine($"50 {currentY} Td");
+            currentPageContent.AppendLine($"({EscapeText(math.Expression)}) Tj");
+            currentPageContent.AppendLine("ET");
             currentY -= 20;
         }
 
@@ -287,7 +432,6 @@ namespace DotTex2.Convert
             return position;
         }
 
-        // Adds a stream object (content streams in PDF) and returns its position
         private int AddStreamObject(string streamContent)
         {
             int position = pdf.Length;
@@ -301,7 +445,6 @@ namespace DotTex2.Convert
             return position;
         }
 
-        // Generates the xref table and trailer
         private void GenerateXrefAndTrailer(string outputPath)
         {
             int xrefPosition = pdf.Length;
@@ -314,14 +457,12 @@ namespace DotTex2.Convert
                 pdf.AppendLine(pos.ToString("D10") + " 00000 n ");
             }
 
-            // Trailer
             pdf.AppendLine("trailer");
             pdf.AppendLine($"<< /Size {objectCount + 1} /Root 1 0 R >>");
             pdf.AppendLine("startxref");
             pdf.AppendLine(xrefPosition.ToString());
             pdf.AppendLine("%%EOF");
 
-            // Write the final PDF content to the file
             File.WriteAllText(outputPath, pdf.ToString());
         }
     }

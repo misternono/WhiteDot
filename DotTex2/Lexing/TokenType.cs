@@ -23,6 +23,8 @@ namespace DotTex2.Lexing
         Date,
         UsePackage,
         DocumentClass,
-        Metadata
+        Metadata,
+        FontCommand,
+        FontSetting
     }
 }

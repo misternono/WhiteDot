@@ -10,7 +10,7 @@ public class CommandClassifier
     {
         "\\textbf", "\\textit", "\\underline", "\\emph", "\\footnote", "\\cite",
         "\\ref", "\\label", "\\url", "\\color", "\\textcolor", "\\textsuperscript",
-        "\\textsubscript", "\\verb", "\\includegraphics", "\\hyperref"
+        "\\textsubscript", "\\verb", "\\includegraphics", "\\hyperref", "\\LaTeX"
     };
 
     private static readonly HashSet<string> KnownBlockCommands = new HashSet<string>
@@ -27,6 +27,22 @@ public class CommandClassifier
             { "\\date", TokenType.Date },
             { "\\documentclass", TokenType.DocumentClass },
             { "\\usepackage", TokenType.UsePackage }
+        };
+
+    private static readonly HashSet<string> FontStyleCommands = new HashSet<string>
+        {
+            "\\rm", "\\sf", "\\tt", "\\md", "\\bf", "\\up", "\\it", "\\sl", "\\sc",
+            "\\rmfamily", "\\sffamily", "\\ttfamily", "\\mdseries", "\\bfseries",
+            "\\upshape", "\\itshape", "\\slshape", "\\scshape",
+            "\\tiny", "\\scriptsize", "\\footnotesize", "\\small", "\\normalsize",
+            "\\large", "\\Large", "\\LARGE", "\\huge", "\\Huge", "\\normalfont",
+            "\\normalem"
+        };
+
+    private static readonly HashSet<string> FontSettingCommands = new HashSet<string>
+        {
+            "\\documentclass", "\\usepackage", "\\setmainfont", "\\setsansfont",
+            "\\setmonofont", "\\fontfamily", "\\fontsize", "\\linespread"
         };
 
     public static void ExtractMetadata(List<Token> tokens, Dictionary<string, string> metadata, Token metadataToken)
@@ -58,16 +74,20 @@ public class CommandClassifier
     public static CommandType ClassifyCommand(string command)
     {
         // Remove the leading backslash if present
-        command = command.TrimStart('\\');
+        //command = command.TrimStart('\\');
 
         // Check if it's a known inline command
-        if (KnownInlineCommands.Contains("\\" + command))
+        if (KnownInlineCommands.Contains( command))
         {
             return CommandType.Inline;
         }
 
+        if (FontStyleCommands.Contains(command))
+            return CommandType.FontStyle;
+        if (FontSettingCommands.Contains(command))
+            return CommandType.FontSetting;
         // Check if it's a known block command
-        if (KnownBlockCommands.Contains("\\" + command))
+        if (KnownBlockCommands.Contains( command))
         {
             return CommandType.Block;
         }
@@ -89,5 +109,7 @@ public class CommandClassifier
 public enum CommandType
 {
     Inline,
-    Block
+    Block,
+    FontStyle,
+    FontSetting
 }

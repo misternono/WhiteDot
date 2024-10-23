@@ -14,26 +14,89 @@ class Program
         Console.WriteLine("=================");
 
         // Sample LaTeX document
-        string latexContent = @"\documentclass{article}
-\title{Demo Document}
-\author{John Doe}
+        string latexContent = @"\\documentclass[12pt]{article}
+\usepackage{fontspec}
+\usepackage{mathpazo}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{lipsum}
+
+% Font settings
+\setmainfont{Times New Roman}
+\setsansfont{Arial}
+\setmonofont{Courier New}
+
+% Custom spacing
+\linespread{1.15}
+
+\title{\textsf{\LARGE Advanced Document Formatting Examples}}
+\author{\textsc{John Smith}}
+\date{\today}
 
 \begin{document}
 
 \maketitle
 
-\section{Introduction}
-This is a simple document to demonstrate the \textbf{LaTeX Parser} library.
+\section{\textsf{Introduction to Font Styles}}
 
-\subsection{Math Example}
-Here's a famous equation: $E = mc^2$
+This section demonstrates various \textbf{font styles} and \textit{formatting options} 
+available in \LaTeX. Here's some \texttt{monospace text} and \textsc{small caps text}.
 
-\section{Features}
+\subsection{Font Families}
+{\rmfamily This text is in Roman Family}\\
+{\sffamily This text is in Sans Serif Family}\\
+{\ttfamily This text is in Typewriter Family}
+
+\subsection{Font Sizes}
+{\tiny Tiny text} \\
+{\scriptsize Script size text} \\
+{\footnotesize Footnote size text} \\
+{\small Small text} \\
+{\normalsize Normal size text} \\
+{\large Large text} \\
+{\Large Larger text} \\
+{\LARGE Even larger text} \\
+{\huge Huge text} \\
+{\Huge Massive text}
+
+\section{Mathematical Expressions}
+
+Inline math: $E = mc^2$ and display math:
+$$\int_{0}^{\infty} e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$
+
+\section{Lists and Environments}
+
 \begin{itemize}
-\item Parsing of basic LaTeX structures
-\item Support for inline math
-\item Conversion to other formats
+    \item \textbf{Bold list item}
+    \item \textit{Italic list item}
+    \item {\large Large list item}
 \end{itemize}
+
+\begin{enumerate}
+    \item {\sffamily First numbered item}
+    \item {\ttfamily Second numbered item}
+    \item {\scshape Third numbered item}
+\end{enumerate}
+
+\section{Table with Different Fonts}
+
+
+\section{Verbatim Environment}
+\begin{verbatim}
+This is verbatim text
+  It preserves spacing
+    And formatting
+\end{verbatim}
+
+\section{\textsf{Mixed Formatting}}
+
+{\large\bfseries This is large bold text.}
+
+{\sffamily\itshape This is sans-serif italic text.}
+
+{\ttfamily\bfseries This is bold typewriter text.}
+
+{\normalsize\scshape This is normal-sized small caps text.}
 
 \end{document}";
 
@@ -46,7 +109,7 @@ Here's a famous equation: $E = mc^2$
         Console.WriteLine("\nDocument Structure:");
         PrintDocumentStructure(document);
         var conv= new LatexToPdf();
-        conv.GeneratePDF(document, "C:\\Users\\admin\\Documents\\test.pdf");
+        conv.GeneratePDF(document, "D:\\test.pdf");
         Console.WriteLine("\nConverting to HTML...");
         //var htmlConverter = new HTMLConverter();
         //string html = htmlConverter.Convert(document);
