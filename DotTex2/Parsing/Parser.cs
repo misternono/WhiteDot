@@ -65,25 +65,25 @@ namespace DotTex2.Parsing
             switch (token.Value)
             {
                 case "\\textbf":
-                    return new BoldText
+                    return new TextElement
                     {
                         Text = string.Join("", content.OfType<TextElement>().Select(t => t.Text)),
                         FontSettings = new FontSettings { IsBold = true }
                     };
                 case "\\textit":
-                    return new ItalicText
+                    return new TextElement
                     {
                         Text = string.Join("", content.OfType<TextElement>().Select(t => t.Text)),
                         FontSettings = new FontSettings { IsItalic = true }
                     };
                 case "\\texttt":
-                    return new TypewriterText
+                    return new TextElement
                     {
                         Text = string.Join("", content.OfType<TextElement>().Select(t => t.Text)),
                         FontSettings = new FontSettings { IsTypewriter = true }
                     };
                 case "\\textsc":
-                    return new SmallCapsText
+                    return new TextElement
                     {
                         Text = string.Join("", content.OfType<TextElement>().Select(t => t.Text)),
                         FontSettings = new FontSettings { IsSmallCaps = true }

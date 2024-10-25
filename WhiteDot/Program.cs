@@ -109,20 +109,20 @@ This is verbatim text
         Console.WriteLine("\nDocument Structure:");
         PrintDocumentStructure(document);
         var conv= new LatexToPdf();
-        conv.GeneratePDF(document, "D:\\test.pdf");
-        Console.WriteLine("\nConverting to HTML...");
-        //var htmlConverter = new HTMLConverter();
-        //string html = htmlConverter.Convert(document);
-        //Console.WriteLine(html);
+        conv.GeneratePDF(document, "C:\\Users\\admin\\Documents\\test.pdf");
+        //Console.WriteLine("\nConverting to HTML...");
+        ////var htmlConverter = new HTMLConverter();
+        ////string html = htmlConverter.Convert(document);
+        ////Console.WriteLine(html);
 
-        Console.WriteLine("\nDemonstrating document manipulation...");
-        AddNewSection(document);
+        //Console.WriteLine("\nDemonstrating document manipulation...");
+        //AddNewSection(document);
 
-        Console.WriteLine("\nUpdated Document Structure:");
-        PrintDocumentStructure(document);
+        //Console.WriteLine("\nUpdated Document Structure:");
+        //PrintDocumentStructure(document);
 
-        Console.WriteLine("\nPress any key to exit...");
-        Console.ReadKey();
+        //Console.WriteLine("\nPress any key to exit...");
+        //Console.ReadKey();
     }
 
     static void PrintDocumentStructure(Document doc, string indent = "")
