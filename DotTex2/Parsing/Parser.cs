@@ -210,7 +210,7 @@ namespace DotTex2.Parsing
                         case "\\subsection":
                             return ParseSubsection();
                         case "\\item":
-                            return ParseListItem(); // Add handler for \item
+                                return ParseListItem(); // Add handler for \item
                         case "\\textbf":
                             return ParseBoldText();
                         case "\\textit":
@@ -263,7 +263,7 @@ namespace DotTex2.Parsing
             var section = new Section();
             section.Title = ParseInlineContent().OfType<TextElement>().FirstOrDefault()?.Text ?? "";
 
-            while (currentIndex < tokens.Count && tokens[currentIndex].Type != TokenType.Command)
+            while (currentIndex < tokens.Count && tokens[currentIndex].Value != "\\section" && tokens[currentIndex].Value != "\\subsection")
             {
                 var element = ParseElement();
                 if (element != null)
@@ -321,6 +321,7 @@ namespace DotTex2.Parsing
                     environment = new Itemize();
                     while (currentIndex < tokens.Count && !(tokens[currentIndex].Type == TokenType.EndEnvironment && tokens[currentIndex].Value.Contains("itemize")))
                     {
+                        if (tokens[currentIndex].Value != "\\item") { ParseElement(); continue; }
                         var element = ParseElement();
                         if (element != null && element is Paragraph paragraph)
                         {
@@ -333,6 +334,7 @@ namespace DotTex2.Parsing
                     environment = new Enumerate();
                     while (currentIndex < tokens.Count && !(tokens[currentIndex].Type == TokenType.EndEnvironment && tokens[currentIndex].Value.Contains("enumerate")))
                     {
+                        if (tokens[currentIndex].Value != "\\item") { ParseElement(); continue; }
                         var element = ParseElement();
                         if (element != null && element is Paragraph paragraph)
                         {

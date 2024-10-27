@@ -67,15 +67,15 @@ $$\int_{0}^{\infty} e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$
 \section{Lists and Environments}
 
 \begin{itemize}
-    \item \textbf{Bold list item}
-    \item \textit{Italic list item}
-    \item {\large Large list item}
+    \item\textbf{Bold list item}
+    \item\textit{Italic list item}
+    \item{\large Large list item}
 \end{itemize}
 
 \begin{enumerate}
-    \item {\sffamily First numbered item}
-    \item {\ttfamily Second numbered item}
-    \item {\scshape Third numbered item}
+    \item{\sffamily First numbered item}
+    \item{\ttfamily Second numbered item}
+    \item{\scshape Third numbered item}
 \end{enumerate}
 
 \section{Table with Different Fonts}
@@ -109,7 +109,7 @@ This is verbatim text
         Console.WriteLine("\nDocument Structure:");
         PrintDocumentStructure(document);
         var conv= new LatexToPdf();
-        conv.GeneratePDF(document, "C:\\Users\\admin\\Documents\\test.pdf");
+        conv.GeneratePDF(document, "D:\\test.pdf");
         //Console.WriteLine("\nConverting to HTML...");
         ////var htmlConverter = new HTMLConverter();
         ////string html = htmlConverter.Convert(document);

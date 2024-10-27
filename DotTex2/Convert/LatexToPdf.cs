@@ -119,10 +119,71 @@ namespace DotTex2.Convert
 
         private void ApplyFontSettings(FontSettings settings)
         {
-            if (settings == null) { ApplyDefaultFont(); return; }
+            if (settings == null)
+            {
+                ApplyDefaultFont();
+                return;
+            }
+
+            // Get base font name and size
             string fontName = GetFontName(settings);
             int fontSize = GetFontSize(settings);
+
+            // Apply font family and size
             currentPageContent.Append($"/{fontName} {fontSize} Tf ");
+
+            // Apply line spacing
+            float leading = fontSize * (float)settings.LineSpacing;
+            currentPageContent.Append($"{leading} TL ");
+
+            // Apply text rendering mode for bold text
+            if (settings.IsBold)
+            {
+                // Text rendering mode 2 for artificial bold if needed
+                currentPageContent.Append("2 Tr ");
+                // Adjust stroke width for bold effect
+                currentPageContent.Append($"{fontSize * 0.05} w ");
+            }
+            else
+            {
+                // Normal text rendering mode
+                currentPageContent.Append("0 Tr ");
+            }
+
+            // Apply text matrix transformation for italic
+            if (settings.IsItalic)
+            {
+                // Apply italic slant using text matrix
+                float italicAngle = 0.2f; // Approximately 11.5 degrees
+                currentPageContent.Append($"1 0 {italicAngle} 1 0 0 Tm ");
+            }
+
+            // Apply small caps
+            if (settings.IsSmallCaps)
+            {
+                currentPageContent.Append("2 Tr ");
+                currentPageContent.Append("0.8 Ts ");
+            }
+
+            // Text state parameters
+            float horizontalScaling = 100;
+            float characterSpacing = 0;
+            float wordSpacing = 0;
+
+            // Adjust for typewriter font
+            if (settings.IsTypewriter)
+            {
+                characterSpacing = fontSize * 0.6f;
+                wordSpacing = fontSize * 0.5f;
+            }
+
+            // Apply text state parameters
+            currentPageContent.Append($"{characterSpacing} Tc ");
+            currentPageContent.Append($"{wordSpacing} Tw ");
+            currentPageContent.Append($"{horizontalScaling} Tz ");
+
+            // Store current settings for reference
+            //currentFontSettings = settings;
         }
 
         private void ApplyDefaultFont()
@@ -233,6 +294,10 @@ namespace DotTex2.Convert
                             CheckPageBreak(30 * it.Content.Count); // Space for itemize list
                             RenderItemize(it);
                             break;
+                        case Enumerate en:
+                            CheckPageBreak(30 * en.Content.Count); // Space for itemize list
+                            RenderEnumerate(en);
+                            break;
                         default:
                             foreach (var cont in env.Content)
                             {
@@ -259,10 +324,36 @@ namespace DotTex2.Convert
 
             foreach (var cont in it.Content)
             {
+                if (cont is ParagraphBreak) continue;
                 currentPageContent.AppendLine("BT");
                 ApplyDefaultFont();
                 currentPageContent.AppendLine($"50 {currentY} Td");
                 currentPageContent.Append($"({" · "}) Tj ");
+                currentY -= 30;
+                RenderElement(cont);
+            }
+        }
+
+        private void RenderEnumerate(Enumerate en)
+        {
+            if (isNewLine)
+            {
+                currentPageContent.AppendLine("BT");
+                ApplyDefaultFont();
+                currentPageContent.AppendLine($"50 {currentY} Td");
+                isNewLine = false;
+            }
+
+            int counter = 0;
+
+            foreach (var cont in en.Content)
+            {
+                if (cont is ParagraphBreak) continue;
+                counter++;
+                currentPageContent.AppendLine("BT");
+                ApplyDefaultFont();
+                currentPageContent.AppendLine($"50 {currentY} Td");
+                currentPageContent.Append($"({" " + counter + ". "}) Tj ");
                 currentY -= 30;
                 RenderElement(cont);
             }
