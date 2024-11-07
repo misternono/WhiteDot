@@ -14,20 +14,7 @@ class Program
         Console.WriteLine("=================");
 
         // Sample LaTeX document
-        string latexContent = @"\\documentclass[12pt]{article}
-\usepackage{fontspec}
-\usepackage{mathpazo}
-\usepackage{microtype}
-\usepackage{hyperref}
-\usepackage{lipsum}
-
-% Font settings
-\setmainfont{Times New Roman}
-\setsansfont{Arial}
-\setmonofont{Courier New}
-
-% Custom spacing
-\linespread{1.15}
+        string latexContent = @"
 
 \title{\textsf{\LARGE Advanced Document Formatting Examples}}
 \author{\textsc{John Smith}}

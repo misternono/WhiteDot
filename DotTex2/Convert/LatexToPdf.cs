@@ -33,6 +33,7 @@ namespace DotTex2.Convert
         private int sectionIndex = 0;
         private int subsectionIndex = 0;
         private const int PAGE_HEIGHT = 842;
+        private const int PAGE_WIDTH = 595;
         private const int PAGE_MARGIN_BOTTOM = 50;
         private const int NEW_PAGE_START_Y = 800;
 
@@ -42,62 +43,80 @@ namespace DotTex2.Convert
         public void GeneratePDF(Document doc, string outputPath)
         {
             pdf.AppendLine("%PDF-1.4");
+            //currentPage = new PageState();
 
             // Create initial objects
-            int catalogPos = AddObject("<< /Type /Catalog /Pages 2 0 R >>");
+            AddObject("<< /Type /Catalog /Pages 2 0 R >>"); // Object 1: Catalog
 
-            // Render content and collect pages
+            // Render content
             RenderContent(doc);
 
-            // Create page tree
-            StringBuilder kidsString = new StringBuilder("[");
+            // Create page tree (Object 2)
+            StringBuilder pageRefs = new StringBuilder("[");
             int pageCount = contentStreams.Count;
-            int firstPageRef = 3; // First page object reference
+            int firstPageObj = 3;
 
             for (int i = 0; i < pageCount; i++)
             {
-                if (i > 0) kidsString.Append(" ");
-                kidsString.Append($"{firstPageRef + (i * 2)} 0 R");
+                if (i > 0) pageRefs.Append(" ");
+                pageRefs.Append($"{firstPageObj + (i * 2)} 0 R");
             }
-            kidsString.Append("]");
+            pageRefs.Append("]");
 
-            int pagesPos = AddObject($"<< /Type /Pages /Kids {kidsString} /Count {pageCount} >>");
+            AddObject($"<< /Type /Pages /Kids {pageRefs} /Count {pageCount} >>");
 
-            // Add each page and its content stream
+            // Add pages and their content streams
             for (int i = 0; i < contentStreams.Count; i++)
             {
-                int pageContentRef = firstPageRef + (i * 2) + 1;
-                AddObject($"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 {PAGE_HEIGHT}] /Contents {pageContentRef} 0 R /Resources << /Font << /F1 5 0 R /F1B 6 0 R /F1I 7 0 R >> >> >>");
+                int contentObjNum = firstPageObj + (i * 2) + 1;
+                // Page object
+                AddObject($@"<< 
+                    /Type /Page 
+                    /Parent 2 0 R 
+                    /MediaBox [0 0 {PAGE_WIDTH} {PAGE_HEIGHT}] 
+                    /Contents {contentObjNum} 0 R 
+                    /Resources <<
+                        /Font <<
+                            /F1 {firstPageObj + (pageCount * 2)} 0 R
+                            /F1B {firstPageObj + (pageCount * 2) + 1} 0 R
+                            /F1I {firstPageObj + (pageCount * 2) + 2} 0 R
+                            /F1BI {firstPageObj + (pageCount * 2) + 2} 0 R
+                        >>
+                    >>
+                >>");
+
+                // Content stream
                 AddStreamObject(contentStreams[i]);
             }
 
             // Add font objects
-            int fontPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-            int fontBoldPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
-            int fontItalicPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique >>");
-            int fontBoldItalicPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-BoldOblique >>");
-            int fontMonoPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>");
-            int fontMonoBoldPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>");
-            int fontMonoItalicPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Oblique >>");
-            int fontMonoBoldItalicPos = AddObject("<< /Type /Font /Subtype /Type1 /BaseFont /Courier-BoldOblique >>");
+            AddObject(@"<< 
+                /Type /Font 
+                /Subtype /Type1 
+                /BaseFont /Times-Roman 
+                /Encoding /WinAnsiEncoding 
+            >>");
 
-            string fontResources = @"<< /Font 
-            << /F1 5 0 R 
-               /F1B 6 0 R 
-               /F1I 7 0 R 
-               /F1BI 8 0 R
-               /F2 9 0 R
-               /F2B 10 0 R
-               /F2I 11 0 R
-               /F2BI 12 0 R
-            >> >>";
+            AddObject(@"<< 
+                /Type /Font 
+                /Subtype /Type1 
+                /BaseFont /Times-Bold 
+                /Encoding /WinAnsiEncoding 
+            >>");
 
-            for (int i = 0; i < contentStreams.Count; i++)
-            {
-                int pageContentRef = firstPageRef + (i * 2) + 1;
-                AddObject($"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 {PAGE_HEIGHT}] /Contents {pageContentRef} 0 R /Resources {fontResources} >>");
-                AddStreamObject(contentStreams[i]);
-            }
+            AddObject(@"<< 
+                /Type /Font 
+                /Subtype /Type1 
+                /BaseFont /Times-Italic 
+                /Encoding /WinAnsiEncoding 
+            >>");
+
+            AddObject(@"<< 
+                /Type /Font 
+                /Subtype /Type1 
+                /BaseFont /Times-BoldItalic 
+                /Encoding /WinAnsiEncoding 
+            >>");
 
             GenerateXrefAndTrailer(outputPath);
         }
@@ -117,78 +136,9 @@ namespace DotTex2.Convert
             return fontSizeMap.TryGetValue(settings.FontSize, out int size) ? size : 12;
         }
 
-        private void ApplyFontSettings(FontSettings settings)
-        {
-            if (settings == null)
-            {
-                ApplyDefaultFont();
-                return;
-            }
-
-            // Get base font name and size
-            string fontName = GetFontName(settings);
-            int fontSize = GetFontSize(settings);
-
-            // Apply font family and size
-            currentPageContent.Append($"/{fontName} {fontSize} Tf ");
-
-            // Apply line spacing
-            float leading = fontSize * (float)settings.LineSpacing;
-            currentPageContent.Append($"{leading} TL ");
-
-            // Apply text rendering mode for bold text
-            if (settings.IsBold)
-            {
-                // Text rendering mode 2 for artificial bold if needed
-                currentPageContent.Append("2 Tr ");
-                // Adjust stroke width for bold effect
-                currentPageContent.Append($"{fontSize * 0.05} w ");
-            }
-            else
-            {
-                // Normal text rendering mode
-                currentPageContent.Append("0 Tr ");
-            }
-
-            // Apply text matrix transformation for italic
-            if (settings.IsItalic)
-            {
-                // Apply italic slant using text matrix
-                float italicAngle = 0.2f; // Approximately 11.5 degrees
-                currentPageContent.Append($"1 0 {italicAngle} 1 0 0 Tm ");
-            }
-
-            // Apply small caps
-            if (settings.IsSmallCaps)
-            {
-                currentPageContent.Append("2 Tr ");
-                currentPageContent.Append("0.8 Ts ");
-            }
-
-            // Text state parameters
-            float horizontalScaling = 100;
-            float characterSpacing = 0;
-            float wordSpacing = 0;
-
-            // Adjust for typewriter font
-            if (settings.IsTypewriter)
-            {
-                characterSpacing = fontSize * 0.6f;
-                wordSpacing = fontSize * 0.5f;
-            }
-
-            // Apply text state parameters
-            currentPageContent.Append($"{characterSpacing} Tc ");
-            currentPageContent.Append($"{wordSpacing} Tw ");
-            currentPageContent.Append($"{horizontalScaling} Tz ");
-
-            // Store current settings for reference
-            //currentFontSettings = settings;
-        }
-
         private void ApplyDefaultFont()
         {
-            currentPageContent.Append("/F1 12 Tf ");
+            currentPageContent.AppendLine("/F1 12 Tf ");
         }
 
         private void CheckPageBreak(int requiredSpace)
@@ -326,9 +276,9 @@ namespace DotTex2.Convert
             {
                 if (cont is ParagraphBreak) continue;
                 currentPageContent.AppendLine("BT");
-                ApplyDefaultFont();
+                //ApplyDefaultFont();
                 currentPageContent.AppendLine($"50 {currentY} Td");
-                currentPageContent.Append($"({" · "}) Tj ");
+                currentPageContent.Append($"({" - "}) Tj ");
                 currentY -= 30;
                 RenderElement(cont);
             }
@@ -351,7 +301,7 @@ namespace DotTex2.Convert
                 if (cont is ParagraphBreak) continue;
                 counter++;
                 currentPageContent.AppendLine("BT");
-                ApplyDefaultFont();
+                //ApplyDefaultFont();
                 currentPageContent.AppendLine($"50 {currentY} Td");
                 currentPageContent.Append($"({" " + counter + ". "}) Tj ");
                 currentY -= 30;
@@ -378,32 +328,32 @@ namespace DotTex2.Convert
                         string text = t.FontSettings.IsSmallCaps
                             ? EscapeText(t.Text).ToUpper()
                             : EscapeText(t.Text);
-                        currentPageContent.Append($"({text}) Tj ");
-                        ApplyDefaultFont();
+                        currentPageContent.AppendLine($"({text}) Tj ");
+                        //ApplyDefaultFont();
                         break;
 
                     case BoldText b:
-                        ApplyFontSettings(b.FontSettings);
+                        //ApplyFontSettings(b.FontSettings);
                         currentPageContent.Append($"({EscapeText(b.Text)}) Tj ");
-                        ApplyDefaultFont();
+                        //ApplyDefaultFont();
                         break;
 
                     case ItalicText i:
-                        ApplyFontSettings(i.FontSettings);
+                        //ApplyFontSettings(i.FontSettings);
                         currentPageContent.Append($"({EscapeText(i.Text)}) Tj ");
-                        ApplyDefaultFont();
+                        //ApplyDefaultFont();
                         break;
 
                     case TypewriterText t:
-                        ApplyFontSettings(t.FontSettings);
+                        //ApplyFontSettings(t.FontSettings);
                         currentPageContent.Append($"({EscapeText(t.Text)}) Tj ");
-                        ApplyDefaultFont();
+                        //ApplyDefaultFont();
                         break;
 
                     case SmallCapsText s:
-                        ApplyFontSettings(s.FontSettings);
+                        //ApplyFontSettings(s.FontSettings);
                         currentPageContent.Append($"({EscapeText(s.Text.ToUpper())}) Tj ");
-                        ApplyDefaultFont();
+                        //ApplyDefaultFont();
                         break;
                 }
             }
@@ -430,26 +380,39 @@ namespace DotTex2.Convert
                     break;
 
                 case BoldText b:
-                    ApplyFontSettings(b.FontSettings);
+                    currentPageContent.AppendLine("/F1B 12 Tf");
+                    //ApplyFontSettings(b.FontSettings);
                     currentPageContent.Append($"({EscapeText(b.Text)}) Tj ");
                     break;
 
                 case ItalicText i:
-                    ApplyFontSettings(i.FontSettings);
+                    currentPageContent.AppendLine("/F1I 12 Tf");
+                    //ApplyFontSettings(i.FontSettings);
                     currentPageContent.Append($"({EscapeText(i.Text)}) Tj ");
                     break;
 
                 case TypewriterText t:
-                    ApplyFontSettings(t.FontSettings);
+                    //ApplyFontSettings(t.FontSettings);
                     currentPageContent.Append($"({EscapeText(t.Text)}) Tj ");
                     break;
 
                 case SmallCapsText s:
-                    ApplyFontSettings(s.FontSettings);
+                    //ApplyFontSettings(s.FontSettings);
                     currentPageContent.Append($"({EscapeText(s.Text.ToUpper())}) Tj ");
                     break;
             }
             ApplyDefaultFont();
+        }
+
+        private void ApplyFontSettings(FontSettings fontSettings)
+        {
+            if (fontSettings == null) return;
+            currentPageContent.Append("/F1");
+
+            if (fontSettings.IsBold) currentPageContent.Append("B");
+            if (fontSettings.IsItalic) currentPageContent.Append("I");
+
+            currentPageContent.AppendLine(" 12 Tf");
         }
 
         private void RenderSection(Section s)
