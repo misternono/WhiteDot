@@ -25,6 +25,32 @@ namespace DotTex2.Lexing
 
         public IEnumerable<Token> Tokenize(string input)
         {
+            string[] lines = input.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            List<string> cleanedLines = new List<string>();
+
+            bool inVerbatimEnv = false;
+            foreach (string line in lines)
+            {
+                if (line.Trim().StartsWith("\\begin{verbatim}"))
+                {
+                    inVerbatimEnv = true;
+                }
+                else if (line.Trim().StartsWith("\\end{verbatim}"))
+                {
+                    inVerbatimEnv = false;
+                }
+
+                if (inVerbatimEnv)
+                {
+                    cleanedLines.Add(line);
+                }
+                else
+                {
+                    cleanedLines.Add(line.TrimStart());
+                }
+            }
+
+            input = string.Join(Environment.NewLine, cleanedLines);
             foreach (Match match in TokenRegex.Matches(input))
             {
                 if (match.Groups[1].Success) // Begin environment

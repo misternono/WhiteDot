@@ -170,7 +170,10 @@ namespace DotTex2.Convert
 
             foreach (var element in doc.Elements)
             {
+                isNewLine =true;
+                if (element is ParagraphBreak) continue;
                 RenderElement(element);
+                currentY -= 30;
             }
 
             if (!isNewLine)
@@ -248,6 +251,10 @@ namespace DotTex2.Convert
                             CheckPageBreak(30 * en.Content.Count); // Space for itemize list
                             RenderEnumerate(en);
                             break;
+                        case Verbatim ve:
+                            
+                            RenderVerbatim(ve.Text); 
+                            break;
                         default:
                             foreach (var cont in env.Content)
                             {
@@ -259,6 +266,30 @@ namespace DotTex2.Convert
                 default:
                     Console.WriteLine("unknown" + element.ToString());
                     break;
+            }
+        }
+
+        private void RenderVerbatim(string text)
+        {
+            if (isNewLine)
+            {
+                currentPageContent.AppendLine("BT");
+                ApplyDefaultFont();
+                currentPageContent.AppendLine($"50 {currentY} Td");
+                isNewLine = false;
+            }
+
+            // Split the text into lines
+            string[] lines = text.Split(new[] { System.Environment.NewLine }, StringSplitOptions.None);
+            CheckPageBreak(30 * lines.Count());
+            // Render each line of the verbatim text
+            foreach (string line in lines)
+            {
+                currentPageContent.AppendLine("BT");
+                ApplyDefaultFont();
+                currentPageContent.AppendLine($"50 {currentY} Td");
+                currentPageContent.Append($"({line}) Tj ");
+                currentY -= 15; // Adjust the Y position for the next line
             }
         }
 
@@ -329,6 +360,7 @@ namespace DotTex2.Convert
                             ? EscapeText(t.Text).ToUpper()
                             : EscapeText(t.Text);
                         currentPageContent.AppendLine($"({text}) Tj ");
+                        //currentY -= 30;
                         //ApplyDefaultFont();
                         break;
 
@@ -358,6 +390,7 @@ namespace DotTex2.Convert
                 }
             }
         }
+
 
         private void RenderInline(InlineElement p)
         {
@@ -407,7 +440,8 @@ namespace DotTex2.Convert
         private void ApplyFontSettings(FontSettings fontSettings)
         {
             if (fontSettings == null) return;
-            currentPageContent.Append("/F1");
+
+            currentPageContent.Append(fontSettings.IsTypewriter ? "/F1" : "/F1");
 
             if (fontSettings.IsBold) currentPageContent.Append("B");
             if (fontSettings.IsItalic) currentPageContent.Append("I");
@@ -457,14 +491,87 @@ namespace DotTex2.Convert
 
         private void RenderMath(MathExpression math)
         {
+            // Begin a new text line for math content
             currentPageContent.AppendLine("BT");
-            currentPageContent.AppendLine("/F1I 12 Tf"); // Math uses italic by default
+            currentPageContent.AppendLine("/F1I 12 Tf"); // Math uses italic font by default
+
+            // Set text position (50, currentY)
             currentPageContent.AppendLine($"50 {currentY} Td");
-            currentPageContent.AppendLine($"({EscapeText(math.Expression)}) Tj");
+
+            // Parse and render the LaTeX-like math expression
+            string parsedMath = ParseMathExpression(math.Expression);
+            currentPageContent.AppendLine($"({EscapeText(parsedMath)}) Tj");
+
             currentPageContent.AppendLine("ET");
+
+            // Adjust vertical position for next line
             currentY -= 20;
         }
 
+        // Helper function to parse a LaTeX-like math expression into basic text format
+        private string ParseMathExpression(string expression)
+        {
+            StringBuilder parsed = new StringBuilder();
+
+            // Simple parsing for LaTeX-style math syntax
+            for (int i = 0; i < expression.Length; i++)
+            {
+                char c = expression[i];
+
+                switch (c)
+                {
+                    case '^': // Superscript
+                        if (i + 1 < expression.Length)
+                        {
+                            parsed.AppendFormat("^{0}", expression[++i]);
+                        }
+                        break;
+
+                    case '_': // Subscript
+                        if (i + 1 < expression.Length)
+                        {
+                            parsed.AppendFormat("_{0}", expression[++i]);
+                        }
+                        break;
+
+                    case '\\': // LaTeX symbols like \int, \sqrt, etc.
+                        string symbol = ParseLatexSymbol(expression, ref i);
+                        parsed.Append(symbol);
+                        break;
+
+                    default:
+                        parsed.Append(c);
+                        break;
+                }
+            }
+
+            return parsed.ToString();
+        }
+
+        // Function to interpret LaTeX symbols
+        private string ParseLatexSymbol(string expression, ref int index)
+        {
+            StringBuilder symbol = new StringBuilder();
+            index++; // Move past the initial '\'
+
+            while (index < expression.Length && Char.IsLetter(expression[index]))
+            {
+                symbol.Append(expression[index++]);
+            }
+            index--; // Step back for the main loop to continue correctly
+
+            // Map basic LaTeX symbols to Unicode or text equivalents
+            return symbol.ToString() switch
+            {
+                "int" => "∫",
+                "sum" => "∑",
+                "sqrt" => "√",
+                "pi" => "π",
+                "alpha" => "α",
+                "beta" => "β",
+                _ => "\\" + symbol // Return as-is if unknown symbol
+            };
+        }
 
         // Escapes text for PDF format, e.g., handling parentheses
         private string EscapeText(string text)
@@ -517,7 +624,7 @@ namespace DotTex2.Convert
             pdf.AppendLine(xrefPosition.ToString());
             pdf.AppendLine("%%EOF");
 
-            File.WriteAllText(outputPath, pdf.ToString());
+            File.WriteAllText(outputPath, pdf.ToString(), Encoding.UTF8);
         }
     }
 }

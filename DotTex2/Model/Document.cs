@@ -11,6 +11,7 @@ namespace DotTex2.Model
         public DocumentClass DocumentClass { get; set; }
         public string Title { get; set; }
         public string Author { get; set; }
+        public DateTime? Date { get; set; } = null;
         public List<IDocumentElement> Elements { get; set; } = new List<IDocumentElement>();
     }
 

@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using System.Xml.XPath;
 using Environment = DotTex2.Model.Environment;
 using DotTex2.Model.Environments;
+using System.Reflection.Metadata;
+using Document = DotTex2.Model.Document;
 
 namespace DotTex2.Parsing
 {
@@ -20,26 +22,26 @@ namespace DotTex2.Parsing
         private int consecutiveNewLines = 0;
         private bool endedEnvironment = false;
         private FontSettings currentFontSettings = new FontSettings();
+        private Document document;
 
         public Parser(List<Token> tokens)
         {
             this.tokens = tokens;
+            this.document = new Document();
         }
 
         public Document Parse()
         {
-            var document = new Document();
-
             while (currentIndex < tokens.Count)
             {
                 var element = ParseElement();
                 if (element != null)
                 {
-                    document.Elements.Add(element);
+                    this.document.Elements.Add(element);
                 }
             }
 
-            return document;
+            return this.document;
         }
 
         private IDocumentElement ParseFontCommand(Token token)
@@ -217,6 +219,12 @@ namespace DotTex2.Parsing
                             return ParseItalicText();
                         case "\\cite":
                             return ParseCitation();
+                        case "\\title":
+                            return ParseTitle();
+                        case "\\author":
+                            return PraseAuthor();
+                        case "\\maketitle":
+                            return MakeTitle();
                         default:
                             // Handle other commands or ignore
                             break;
@@ -232,6 +240,46 @@ namespace DotTex2.Parsing
                     return ParseNewLine();
             }
 
+            return null;
+        }
+
+        private IDocumentElement MakeTitle()
+        {
+            if (string.IsNullOrEmpty(this.document.Title)) throw new Exception("No title is provided.");
+            var p = new Paragraph();
+            p.Content.Add(new TextElement { Text = this.document.Title, FontSettings = new FontSettings { FontSize = "Huge" } });
+            this.document.Elements.Add(p);
+            if (!string.IsNullOrEmpty(this.document.Author))
+            {
+                p = new Paragraph();
+                p.Content.Add( new TextElement { Text = this.document.Author, FontSettings = new FontSettings { FontSize = "Large" } } );
+                this.document.Elements.Add(p);
+            }
+
+            if (this.document.Date != null) p.Content.Add(ParseDate());
+            return null;
+        }
+
+        private InlineElement ParseDate()
+        {
+            throw new NotImplementedException();
+        }
+
+        private IDocumentElement PraseAuthor()
+        {
+            Consume(TokenType.BracketOpen);
+            var content = ParseInlineContent();
+            Consume(TokenType.BracketClose);
+            this.document.Author = string.Join("", content.OfType<TextElement>().Select(t => t.Text));
+            return null;
+        }
+
+        private IDocumentElement ParseTitle()
+        {
+            Consume(TokenType.BracketOpen);
+            var content = ParseInlineContent();
+            Consume(TokenType.BracketClose);
+            this.document.Title = string.Join("", content.OfType<TextElement>().Select(t => t.Text));
             return null;
         }
 
