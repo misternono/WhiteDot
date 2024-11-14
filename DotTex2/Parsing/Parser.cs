@@ -331,6 +331,8 @@ namespace DotTex2.Parsing
             while (currentIndex < tokens.Count && tokens[currentIndex].Type != TokenType.Command)
             {
                 var element = ParseElement();
+                if (element is not ParagraphBreak && element is not null) currentFontSettings = new FontSettings();
+
                 if (element != null)
                 {
                     subsection.Content.Add(element);

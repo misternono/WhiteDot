@@ -446,7 +446,7 @@ namespace DotTex2.Convert
             if (fontSettings.IsBold) currentPageContent.Append("B");
             if (fontSettings.IsItalic) currentPageContent.Append("I");
 
-            currentPageContent.AppendLine(" 12 Tf");
+            currentPageContent.AppendLine($" {fontSizeMap[fontSettings.FontSize]} Tf");
         }
 
         private void RenderSection(Section s)

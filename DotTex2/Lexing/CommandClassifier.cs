@@ -89,9 +89,9 @@ public class CommandClassifier
             return CommandType.Block;
         }
 
-        if (FontStyleCommands.Contains(command))
+        if (FontStyleCommands.Contains("\\" + command))
             return CommandType.FontStyle;
-        if (FontSettingCommands.Contains(command))
+        if (FontSettingCommands.Contains("\\" + command))
             return CommandType.FontSetting;
 
         // If not in either list, we need to make an educated guess
