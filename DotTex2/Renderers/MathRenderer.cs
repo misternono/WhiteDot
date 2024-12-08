@@ -395,7 +395,7 @@ namespace DotRender.Renderers
                 for (int x = 0; x < source.Width; x++)
                 {
                     Color pixelColor = source.GetPixel(x, y);
-                    if (pixelColor.A > 0 && pixelColor != Color.White)
+                    if (pixelColor.R != 255 || pixelColor.B != 255 || pixelColor.G != 255)
                     {
                         minX = Math.Min(minX, x);
                         maxX = Math.Max(maxX, x);
@@ -406,20 +406,30 @@ namespace DotRender.Renderers
             }
 
             // If no non-white pixels found, return original bitmap
-            if (minX == source.Width || minY == source.Height)
+            if (minX == source.Width || maxX == 0 || minY == source.Height || maxY == 0)
                 return source;
 
-            // Create new bitmap with trimmed dimensions
-            int width = Math.Min(maxX - minX + 10, MaxBitmapWidth);
-            int height = Math.Min(maxY - minY + 10, MaxBitmapHeight);
+            // Add a small padding (3-5 pixels) to prevent cutting off edges of characters
+            int padding = 4;
+            minX = Math.Max(0, minX - padding);
+            minY = Math.Max(0, minY - padding);
+            maxX = Math.Min(source.Width - 1, maxX + padding);
+            maxY = Math.Min(source.Height - 1, maxY + padding);
+
+            // Calculate cropped dimensions
+            int width = maxX - minX + 1;
+            int height = maxY - minY + 1;
+
+            // Create new bitmap with precisely trimmed dimensions
             Bitmap trimmed = new Bitmap(width, height);
 
             using (Graphics g = Graphics.FromImage(trimmed))
             {
                 g.Clear(Color.White);
-                g.DrawImage(source, new Rectangle(0, 0, width, height),
-                            new Rectangle(minX, minY, width, height),
-                            GraphicsUnit.Pixel);
+                g.DrawImage(source,
+                    new Rectangle(0, 0, width, height),  // Destination rectangle
+                    new Rectangle(minX, minY, width, height),  // Source rectangle
+                    GraphicsUnit.Pixel);
             }
 
             return trimmed;

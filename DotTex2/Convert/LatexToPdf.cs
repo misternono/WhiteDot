@@ -3,6 +3,8 @@ using DotTex2.Model.Environments;
 using DotTex2.Model.InlineElements;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -489,89 +491,17 @@ namespace DotTex2.Convert
             currentY -= 15;
         }
 
-        private void RenderMath(MathExpression math)
+        public void RenderMath(MathExpression math)
         {
-            // Begin a new text line for math content
-            currentPageContent.AppendLine("BT");
-            currentPageContent.AppendLine("/F1I 12 Tf"); // Math uses italic font by default
+           // MathRenderer mathRenderer = new MathRenderer(15);
 
-            // Set text position (50, currentY)
-            currentPageContent.AppendLine($"50 {currentY} Td");
+//mathRenderer.RenderMath(math.Expression);
 
-            // Parse and render the LaTeX-like math expression
-            string parsedMath = ParseMathExpression(math.Expression);
-            currentPageContent.AppendLine($"({EscapeText(parsedMath)}) Tj");
-
-            currentPageContent.AppendLine("ET");
-
-            // Adjust vertical position for next line
-            currentY -= 20;
+            // Adjust the vertical position for the next element
+            currentY -= 40; // Adjust spacing based on your needs
         }
 
-        // Helper function to parse a LaTeX-like math expression into basic text format
-        private string ParseMathExpression(string expression)
-        {
-            StringBuilder parsed = new StringBuilder();
-
-            // Simple parsing for LaTeX-style math syntax
-            for (int i = 0; i < expression.Length; i++)
-            {
-                char c = expression[i];
-
-                switch (c)
-                {
-                    case '^': // Superscript
-                        if (i + 1 < expression.Length)
-                        {
-                            parsed.AppendFormat("^{0}", expression[++i]);
-                        }
-                        break;
-
-                    case '_': // Subscript
-                        if (i + 1 < expression.Length)
-                        {
-                            parsed.AppendFormat("_{0}", expression[++i]);
-                        }
-                        break;
-
-                    case '\\': // LaTeX symbols like \int, \sqrt, etc.
-                        string symbol = ParseLatexSymbol(expression, ref i);
-                        parsed.Append(symbol);
-                        break;
-
-                    default:
-                        parsed.Append(c);
-                        break;
-                }
-            }
-
-            return parsed.ToString();
-        }
-
-        // Function to interpret LaTeX symbols
-        private string ParseLatexSymbol(string expression, ref int index)
-        {
-            StringBuilder symbol = new StringBuilder();
-            index++; // Move past the initial '\'
-
-            while (index < expression.Length && Char.IsLetter(expression[index]))
-            {
-                symbol.Append(expression[index++]);
-            }
-            index--; // Step back for the main loop to continue correctly
-
-            // Map basic LaTeX symbols to Unicode or text equivalents
-            return symbol.ToString() switch
-            {
-                "int" => "∫",
-                "sum" => "∑",
-                "sqrt" => "√",
-                "pi" => "π",
-                "alpha" => "α",
-                "beta" => "β",
-                _ => "\\" + symbol // Return as-is if unknown symbol
-            };
-        }
+        
 
         // Escapes text for PDF format, e.g., handling parentheses
         private string EscapeText(string text)

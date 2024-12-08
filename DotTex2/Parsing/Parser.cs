@@ -1,16 +1,9 @@
 ﻿using DotTex2.Lexing;
 using DotTex2.Model.InlineElements;
 using DotTex2.Model;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml.XPath;
 using Environment = DotTex2.Model.Environment;
 using DotTex2.Model.Environments;
-using System.Reflection.Metadata;
 using Document = DotTex2.Model.Document;
 
 namespace DotTex2.Parsing
@@ -101,6 +94,7 @@ namespace DotTex2.Parsing
 
         private void ApplyFontStyle(string command)
         {
+            currentFontSettings = new FontSettings();
             switch (command)
             {
                 case "\\rm":
