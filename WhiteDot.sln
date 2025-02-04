@@ -11,7 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DotTest", "DotTest\DotTest.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DotTex2", "DotTex2\DotTex2.csproj", "{CC6E8EEE-D05F-4AF5-9932-0794B02EB70E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotTex2.Test", "DotTex2.Test\DotTex2.Test.csproj", "{27535EE1-8039-48A3-B2F6-571600A32463}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DotTex2.Test", "DotTex2.Test\DotTex2.Test.csproj", "{27535EE1-8039-48A3-B2F6-571600A32463}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotPdf", "DotPdf\DotPdf.csproj", "{249ABDD0-D9B1-410E-83E4-E7FC2930EF5B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{27535EE1-8039-48A3-B2F6-571600A32463}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{27535EE1-8039-48A3-B2F6-571600A32463}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{27535EE1-8039-48A3-B2F6-571600A32463}.Release|Any CPU.Build.0 = Release|Any CPU
+		{249ABDD0-D9B1-410E-83E4-E7FC2930EF5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{249ABDD0-D9B1-410E-83E4-E7FC2930EF5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{249ABDD0-D9B1-410E-83E4-E7FC2930EF5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{249ABDD0-D9B1-410E-83E4-E7FC2930EF5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

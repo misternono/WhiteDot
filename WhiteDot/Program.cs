@@ -95,8 +95,8 @@ This is verbatim text
 
         Console.WriteLine("\nDocument Structure:");
         PrintDocumentStructure(document);
-        var conv= new LatexToPdf();
-        conv.GeneratePDF(document, "D:\\test2.pdf");
+        var conv= new LatexToPdfObj();
+        conv.GeneratePDF(document, "C:\\Users\\admin\\Documents\\test2.pdf");
         //Console.WriteLine("\nConverting to HTML...");
         ////var htmlConverter = new HTMLConverter();
         ////string html = htmlConverter.Convert(document);

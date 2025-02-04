@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Ionic.Zlib" Version="1.9.1.5" />
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\DotTex2\DotTex2.csproj" />
   </ItemGroup>
 
