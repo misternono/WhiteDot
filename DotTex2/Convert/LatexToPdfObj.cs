@@ -52,8 +52,9 @@ namespace DotTex2.Convert
             RenderContent(doc);
 
             // Generate PDF
-            var pdfContent = _pdfDocument.GeneratePdf();
-            File.WriteAllText(outputPath, pdfContent);
+            var ms = new MemoryStream();
+            _pdfDocument.GeneratePdf(ms);
+            File.WriteAllBytes(outputPath, ms.ToArray());
         }
 
         private void RenderContent(Document doc)

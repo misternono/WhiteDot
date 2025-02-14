@@ -1,9 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Pipelines" Version="9.0.1" />
+    <PackageReference Include="ZLibDotNet" Version="0.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Melville.Parsing">
+      <HintPath>..\..\..\..\Downloads\Pdf-main\Src\Melville.Pdf.LowLevel\bin\Debug\net9.0\Melville.Parsing.dll</HintPath>
+    </Reference>
+    <Reference Include="Melville.Pdf.LowLevel">
+      <HintPath>..\..\..\..\Downloads\Pdf-main\Src\Melville.Pdf.LowLevel\bin\Debug\net9.0\Melville.Pdf.LowLevel.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 
 </Project>
