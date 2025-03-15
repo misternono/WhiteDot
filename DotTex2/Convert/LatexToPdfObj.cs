@@ -5,6 +5,8 @@ using DotTex2.Model.InlineElements;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.IO;
+using System.Globalization;
 
 namespace DotTex2.Convert
 {
@@ -28,6 +30,14 @@ namespace DotTex2.Convert
         private PdfPage _currentPage;
         private int sectionIndex = 0;
         private int subsectionIndex = 0;
+        private readonly CultureInfo dotDecimalCulture = CultureInfo.InvariantCulture;
+
+        public LatexToPdfObj()
+        {
+            // Ensure we use a culture that uses dots for decimal points
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+        }
 
         public void GeneratePDF(Document doc, string outputPath)
         {
@@ -361,7 +371,11 @@ namespace DotTex2.Convert
             _currentPage.AddText(text =>
             {
                 text.SetFont("F1", 12);
-                text.ShowText(math.Expression);  // For now, just render as plain text
+
+                // Ensure any numbers in the math expression use dots for decimals
+                string dotDecimalExpression = ConvertToDecimalDot(math.Expression);
+
+                text.ShowText(dotDecimalExpression);  // For now, just render as plain text
             });
         }
 
@@ -376,6 +390,20 @@ namespace DotTex2.Convert
 
             float fontSize = fontSizeMap.TryGetValue(settings.FontSize, out float size) ? size : 12;
             text.SetFont(fontName, fontSize);
+        }
+
+        // Helper method to convert potential comma decimals to dot decimals in text
+        private string ConvertToDecimalDot(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+
+            // This regex finds numbers with comma as decimal separator and replaces with dot
+            // For example, "3,14" becomes "3.14"
+            return System.Text.RegularExpressions.Regex.Replace(
+                text,
+                @"(\d+),(\d+)",
+                m => $"{m.Groups[1].Value}.{m.Groups[2].Value}"
+            );
         }
     }
 }

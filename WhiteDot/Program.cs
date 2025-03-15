@@ -4,6 +4,7 @@ using DotTex2.Model.InlineElements;
 using DotTex2.Parsing;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using DotTex2.Convert;
+using WhiteDot.Licensing;
 
 class Program
 {
@@ -16,13 +17,7 @@ class Program
         // Sample LaTeX document
         string latexContent = @"
 
-\title{\textsf{\LARGE Advanced Document Formatting Examples}}
-\author{\textsc{John Smith}}
-\date{\today}
-
 \begin{document}
-
-\maketitle
 
 \section{\textsf{Introduction to Font Styles}}
 
@@ -87,6 +82,7 @@ This is verbatim text
 
 \end{document}";
 
+        bool licenseValid = LicenseManagerExtensions.Initialize("C:\\repos\\WhiteDot\\WhiteDot.LicenseGenerator\\bin\\Debug\\net9.0\\acme-license.json");
         Console.WriteLine("Parsing LaTeX content...");
         var lexer = new Lexer();
         var tokens = lexer.Tokenize(latexContent).ToList();
@@ -96,7 +92,7 @@ This is verbatim text
         Console.WriteLine("\nDocument Structure:");
         PrintDocumentStructure(document);
         var conv= new LatexToPdfObj();
-        conv.GeneratePDF(document, "C:\\Users\\admin\\Documents\\test2.pdf");
+        conv.GeneratePDF(document, "d:\\test2.pdf");
         //Console.WriteLine("\nConverting to HTML...");
         ////var htmlConverter = new HTMLConverter();
         ////string html = htmlConverter.Convert(document);

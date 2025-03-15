@@ -1,12 +1,12 @@
 ﻿namespace DotPdf
 {
-    using Melville.Pdf.LowLevel.Filters.FlateFilters;
     using System;
     using System.Collections.Generic;
     using System.IO.Compression;
     using System.Reflection.Metadata;
     using System.Resources;
     using System.Text;
+    using WhiteDot.Licensing;
 
     namespace PdfGenerator
     {
@@ -65,16 +65,14 @@
             {
                 const uint MOD_ADLER = 65521;
                 uint a = 1, b = 0;
-
                 // Process each byte in the data
                 foreach (byte bt in data)
                 {
                     a = (a + bt) % MOD_ADLER;
                     b = (b + a) % MOD_ADLER;
                 }
-
                 // Combine the two 16-bit values into a 32-bit Adler-32 checksum
-                return (b << 16) | a;
+                return (b << 16) + a;
             }
 
             // Add binary data directly
@@ -141,9 +139,9 @@
                             var len = uncompressedStream.Length;
                             uncompressedStream.Position = 0;
 
-                            var adler = new Adler32Computer();
+                            //var adler = new Adler32Computer();
 
-                            adler.AddData(uncompressedStream.ToArray());
+                            //adler.AddData(uncompressedStream.ToArray());
                             uncompressedStream.Position = 0;
 
                             // Compress the data using Deflate
@@ -157,11 +155,11 @@
 
                             byte[] adlerBytes = new byte[4];
 
-                            adler.CopyHashToBigEndianSpan(adlerBytes);
+                            //adler.CopyHashToBigEndianSpan(adlerBytes);
 
                             // Write the compressed data to our final stream
                             finalStream.Write(compressedData, 0, compressedData.Length);
-                            finalStream.Write(adlerBytes, 0, 4);
+                            //finalStream.Write(adlerBytes, 0, 4);
 
                             // Calculate and write Adler-32 checksum of the uncompressed data
                             uncompressedStream.Position = 0;
@@ -714,6 +712,9 @@
 
             public PdfDocument()
             {
+                // Check for a valid license
+                LicenseManager.Instance.RequireLicense(ProductType.DotPdf);
+
                 // Initialize basic PDF structure
                 catalog = new PdfCatalog
                 {
@@ -726,6 +727,9 @@
 
             public void GeneratePdf(Stream outputStream)
             {
+                // Recheck license before generating PDF
+                LicenseManager.Instance.RequireLicense(ProductType.DotPdf);
+
                 // Create list to track xref entries in order of appearance
                 var xrefEntries = new List<XrefEntry>();
 

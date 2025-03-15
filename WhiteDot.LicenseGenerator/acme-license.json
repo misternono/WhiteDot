@@ -1,0 +1,14 @@
+{
+  "LicenseKey": "NH5BW-LDVHX-UBYEK-GG6BQ-U2NBB",
+  "CustomerName": "Acme Corp",
+  "CustomerEmail": "info@acme.com",
+  "IssueDate": "2025-03-14T20:05:49.6165464+01:00",
+  "ExpiryDate": "2027-03-14T20:05:49.6165464+01:00",
+  "Products": [
+    0,
+    1
+  ],
+  "IsValid": true,
+  "Signature": "/HUGHxD2NJZsPETEWEicnt5kjrtIJu6rFYGxycVLrhw=",
+  "IntegrityChecksum": "/aF4kujmbz7AYj5APf5wYMZtdGoV9hn5sE2L6nwc7qA="
+}
