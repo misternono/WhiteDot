@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DotPdf\DotPdf.csproj" />
+    <ProjectReference Include="..\WhiteDot.Licensing\WhiteDot.Licensing.csproj" />
   </ItemGroup>
 
 </Project>
