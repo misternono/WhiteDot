@@ -26,6 +26,9 @@ namespace DotTex2.Convert
             {"Huge", 24}
         };
 
+        // Dictionary for placeholder values
+        public Dictionary<string, string> PlaceholderValues { get; set; } = new Dictionary<string, string>();
+
         private PdfDocument _pdfDocument;
         private PdfPage _currentPage;
         private int sectionIndex = 0;
@@ -39,7 +42,36 @@ namespace DotTex2.Convert
             CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
         }
 
-        public void GeneratePDF(Document doc, string outputPath)
+        /// <summary>
+        /// Sets the values to use for placeholders when rendering the PDF
+        /// </summary>
+        /// <param name="placeholders">Dictionary with placeholder IDs as keys and their replacement values as values</param>
+        /// <returns>This instance for method chaining</returns>
+        public LatexToPdfObj SetPlaceholderValues(Dictionary<string, string> placeholders)
+        {
+            if (placeholders != null)
+            {
+                PlaceholderValues = new Dictionary<string, string>(placeholders);
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Sets an individual placeholder value
+        /// </summary>
+        /// <param name="id">The placeholder ID</param>
+        /// <param name="value">The value to replace the placeholder with</param>
+        /// <returns>This instance for method chaining</returns>
+        public LatexToPdfObj SetPlaceholderValue(string id, string value)
+        {
+            if (!string.IsNullOrEmpty(id))
+            {
+                PlaceholderValues[id] = value;
+            }
+            return this;
+        }
+
+        public void GeneratePDF(Document doc, MemoryStream ms)
         {
             _pdfDocument = new PdfDocument();
 
@@ -61,10 +93,16 @@ namespace DotTex2.Convert
             // Render content
             RenderContent(doc);
 
-            // Generate PDF
-            var ms = new MemoryStream();
             _pdfDocument.GeneratePdf(ms);
-            File.WriteAllBytes(outputPath, ms.ToArray());
+        }
+
+        public void GeneratePDF(Document doc, string outputPath)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                GeneratePDF(doc, ms);
+                File.WriteAllBytes(outputPath, ms.ToArray());
+            }
         }
 
         private void RenderContent(Document doc)
@@ -221,6 +259,17 @@ namespace DotTex2.Convert
 
                     case SmallCapsText s:
                         text.ShowText(s.Text.ToUpper());
+                        break;
+
+                    case PlaceholderElement p:
+                        // Check if the placeholder ID exists in the dictionary
+                        if (PlaceholderValues.TryGetValue(p.Id, out string replacementValue))
+                        {
+                            // If found, render the replacement value 
+                            ApplyTextElementFont(text, p.FontSettings);
+                            text.ShowText(replacementValue);
+                        }
+                        // If not found in the dictionary, don't render anything
                         break;
                 }
             });

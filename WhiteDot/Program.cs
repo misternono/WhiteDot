@@ -41,6 +41,9 @@ available in \LaTeX. Here's some \texttt{monospace text} and \textsc{small caps 
 {\huge Huge text} \\
 {\Huge Massive text}
 
+\placeholder{nif}[9999999Y]
+\placeholder{name}[John Doe]
+
 \section{Mathematical Expressions}
 
 Inline math: $E = mc^2$ and display math:
@@ -82,7 +85,7 @@ This is verbatim text
 
 \end{document}";
 
-        bool licenseValid = LicenseManagerExtensions.Initialize("C:\\repos\\WhiteDot\\WhiteDot.LicenseGenerator\\bin\\Debug\\net9.0\\acme-license.json");
+        //bool licenseValid = LicenseManagerExtensions.Initialize("C:\\repos\\WhiteDot\\WhiteDot.LicenseGenerator\\bin\\Debug\\net9.0\\acme-license.json");
         Console.WriteLine("Parsing LaTeX content...");
         var lexer = new Lexer();
         var tokens = lexer.Tokenize(latexContent).ToList();
@@ -92,7 +95,11 @@ This is verbatim text
         Console.WriteLine("\nDocument Structure:");
         PrintDocumentStructure(document);
         var conv= new LatexToPdfObj();
-        conv.GeneratePDF(document, "d:\\test2.pdf");
+        conv.SetPlaceholderValues(new Dictionary<string, string> {
+    { "nif", "12345678X" },
+    { "name", "John Winkler" }
+});
+        conv.GeneratePDF(document, "C:\\Users\\wnoah\\Desktop\\test2.pdf");
         //Console.WriteLine("\nConverting to HTML...");
         ////var htmlConverter = new HTMLConverter();
         ////string html = htmlConverter.Convert(document);

@@ -25,6 +25,7 @@ namespace DotTex2.Lexing
         DocumentClass,
         Metadata,
         FontCommand,
-        FontSetting
+        FontSetting,
+        Placeholder
     }
 }

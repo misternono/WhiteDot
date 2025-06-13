@@ -11,7 +11,7 @@ public class CommandClassifier
         "\\textbf", "\\textit", "\\texttt", "\\textrm", "\\textsf", "\\textmd",
             "\\textup", "\\textsl", "\\textsc", "\\emph","\\textbf", "\\textit", "\\underline", "\\emph", "\\footnote", "\\cite",
         "\\ref", "\\label", "\\url", "\\color", "\\textcolor", "\\textsuperscript",
-        "\\textsubscript", "\\verb", "\\includegraphics", "\\hyperref"
+        "\\textsubscript", "\\verb", "\\includegraphics", "\\hyperref", "\\placeholder"
     };
 
     private static readonly HashSet<string> KnownBlockCommands = new HashSet<string>

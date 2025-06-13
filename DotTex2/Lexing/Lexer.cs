@@ -15,6 +15,7 @@ namespace DotTex2.Lexing
             @"|(\\end\{[a-zA-Z]+\})" + // End environment
             @"|(\\(?:text(?:rm|sf|tt|md|bf|up|it|sl|sc)|em|normalfont|rmfamily|sffamily|ttfamily|mdseries|bfseries|upshape|itshape|slshape|scshape|tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge|normalem))" + // Font commands with opening brace
             @"|(\\(?:documentclass|usepackage|setmainfont|setsansfont|setmonofont|fontfamily|fontsize|linespread))" + // Font settings and packages
+            @"|(\\placeholder\{[a-zA-Z0-9_]+\}\[[^\]]*\])" + // Placeholder with ID and content
             @"|(\\[a-zA-Z]+)" + // Other LaTeX commands
             @"|(\$\$|\$)" + // Math mode (both inline and display)
             @"|(\n|\r\n?)" + // New line (including Windows-style)
@@ -92,7 +93,16 @@ namespace DotTex2.Lexing
                         CommandCategory = CommandType.FontSetting
                     };
                 }
-                else if (match.Groups[5].Success) // Other commands
+                else if (match.Groups[5].Success) // Placeholder
+                {
+                    yield return new Token
+                    {
+                        Type = TokenType.Placeholder,
+                        Value = match.Value,
+                        CommandCategory = CommandType.Inline
+                    };
+                }
+                else if (match.Groups[6].Success) // Other commands
                 {
                     string command = match.Value;
                     CommandType commandType = CommandClassifier.ClassifyCommand(command);
@@ -104,7 +114,7 @@ namespace DotTex2.Lexing
                         CommandCategory = commandType
                     };
                 }
-                else if (match.Groups[6].Success) // Math mode
+                else if (match.Groups[7].Success) // Math mode
                 {
                     yield return new Token
                     {
@@ -113,7 +123,7 @@ namespace DotTex2.Lexing
                         //IsDrawable = false
                     };
                 }
-                else if (match.Groups[7].Success) // New line
+                else if (match.Groups[8].Success) // New line
                 {
                     yield return new Token
                     {
@@ -122,7 +132,7 @@ namespace DotTex2.Lexing
                         //IsDrawable = true
                     };
                 }
-                else if (match.Groups[8].Success) // Brackets
+                else if (match.Groups[9].Success) // Brackets
                 {
                     yield return new Token
                     {
@@ -131,7 +141,7 @@ namespace DotTex2.Lexing
                         //IsDrawable = false
                     };
                 }
-                else if (match.Groups[9].Success) // Plain text
+                else if (match.Groups[10].Success) // Plain text
                 {
                     yield return new Token
                     {

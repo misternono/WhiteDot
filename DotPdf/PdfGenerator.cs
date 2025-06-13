@@ -713,7 +713,7 @@
             public PdfDocument()
             {
                 // Check for a valid license
-                LicenseManager.Instance.RequireLicense(ProductType.DotPdf);
+                //LicenseManager.Instance.RequireLicense(ProductType.DotPdf);
 
                 // Initialize basic PDF structure
                 catalog = new PdfCatalog
@@ -728,7 +728,7 @@
             public void GeneratePdf(Stream outputStream)
             {
                 // Recheck license before generating PDF
-                LicenseManager.Instance.RequireLicense(ProductType.DotPdf);
+                //LicenseManager.Instance.RequireLicense(ProductType.DotPdf);
 
                 // Create list to track xref entries in order of appearance
                 var xrefEntries = new List<XrefEntry>();

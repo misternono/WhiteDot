@@ -232,6 +232,8 @@ namespace DotTex2.Parsing
                     return ParseEnvironment();
                 case TokenType.NewLine:
                     return ParseNewLine();
+                case TokenType.Placeholder:
+                    return ParsePlaceholder(token);
             }
 
             return null;
@@ -500,7 +502,7 @@ namespace DotTex2.Parsing
             var token = tokens[currentIndex++];
 
             //// Ignore empty newlines that shouldn't create paragraphs
-            //if (token.Type == TokenType.NewLine && expectedType == null)
+            //if (token.Type == TokenType.NewLine)
             //{
             //    return Consume(expectedType);
             //}
@@ -509,6 +511,37 @@ namespace DotTex2.Parsing
                 throw new InvalidOperationException($"Expected {expectedType}, but got {token.Type}");
 
             return token;
+        }
+
+        private PlaceholderElement ParsePlaceholder(Token token)
+        {
+            // Extract the ID and content from \placeholder{nif}[9999999Y]
+            string value = token.Value;
+            
+            // Extract ID from between curly braces
+            string id = "";
+            int idStart = value.IndexOf('{') + 1;
+            int idEnd = value.IndexOf('}');
+            if (idStart > 0 && idEnd > idStart)
+            {
+                id = value.Substring(idStart, idEnd - idStart);
+            }
+            
+            // Extract content from between square brackets
+            string content = "";
+            int contentStart = value.IndexOf('[') + 1;
+            int contentEnd = value.IndexOf(']');
+            if (contentStart > 0 && contentEnd > contentStart)
+            {
+                content = value.Substring(contentStart, contentEnd - contentStart);
+            }
+            
+            return new PlaceholderElement
+            {
+                Id = id,
+                Content = content,
+                FontSettings = currentFontSettings
+            };
         }
     }
 }
